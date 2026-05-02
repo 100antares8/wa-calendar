@@ -4,11 +4,17 @@ import {
   CALENDAR_COLORS,
   CalendarEventInput,
   calendarColorForMoonPhase,
+  deleteWaCalendarEventsForKinds,
 } from "@/lib/google-calendar";
 import { getSekkiDatesForYear, getKyurekiDayEventsForYear } from "@/lib/japanese-calendar";
 import { getMoonEventsForYear, type MoonPhaseName } from "@/lib/moon-phases";
 
 const ALL_MOON_PHASES: MoonPhaseName[] = ["新月", "上弦", "満月", "下弦"];
+
+function parseColorId(v: unknown, fallback: string): string {
+  if (typeof v !== "string" || !/^([1-9]|1[01])$/.test(v)) return fallback;
+  return v;
+}
 
 /** Vercel Pro 等で長めの同期を許可（Hobby は最大 10s のまま） */
 export const maxDuration = 60;
@@ -30,6 +36,25 @@ export async function POST(req: NextRequest) {
     ? (mp.filter((p: unknown) => typeof p === "string" && ALL_MOON_PHASES.includes(p as MoonPhaseName)) as MoonPhaseName[])
     : null;
 
+  const replaceExisting = body.replaceExisting !== false;
+
+  const sekkiColorId = parseColorId(body.sekkiColorId, CALENDAR_COLORS.sekki);
+  const moonColorId = body.moonColorId != null && body.moonColorId !== ""
+    ? parseColorId(body.moonColorId, CALENDAR_COLORS.mangetsu)
+    : undefined;
+  const kyurekiColorId = parseColorId(body.kyurekiColorId, CALENDAR_COLORS.kyureki);
+
+  const replaceKinds = new Set<"sekki" | "moon" | "kyureki">();
+  if (types.includes("sekki")) replaceKinds.add("sekki");
+  if (types.includes("moon")) replaceKinds.add("moon");
+  if (types.includes("kyureki")) replaceKinds.add("kyureki");
+
+  let deleted = 0;
+  if (replaceExisting && replaceKinds.size > 0) {
+    const d = await deleteWaCalendarEventsForKinds(accessToken, refreshToken, year, replaceKinds);
+    deleted = d.deleted;
+  }
+
   const events: CalendarEventInput[] = [];
 
   if (types.includes("sekki")) {
@@ -41,7 +66,8 @@ export async function POST(req: NextRequest) {
         summary: `【節気】${sekki.kanji}（${sekki.reading}）`,
         description: `二十四節気「${sekki.kanji}」（${sekki.reading}）\n太陽黄経${sekki.longitude}°`,
         date: dateStr,
-        colorId: CALENDAR_COLORS.sekki,
+        colorId: sekkiColorId,
+        waTag: `${year}|sekki|${sekki.kanji}`,
       });
     }
   }
@@ -59,7 +85,8 @@ export async function POST(req: NextRequest) {
         summary: `${ev.emoji}${ev.phase}（${timeStr} JST）`,
         description: `${ev.phase}は${dateStr} ${timeStr} JST`,
         date: dateStr,
-        colorId: calendarColorForMoonPhase(ev.phase),
+        colorId: calendarColorForMoonPhase(ev.phase, moonColorId),
+        waTag: `${year}|moon|${ev.phase}|${dateStr}|${timeStr}`,
       });
     }
   }
@@ -70,7 +97,8 @@ export async function POST(req: NextRequest) {
         summary: ev.summary,
         description: ev.description,
         date: ev.date,
-        colorId: CALENDAR_COLORS.kyureki,
+        colorId: kyurekiColorId,
+        waTag: `${year}|kyureki|${ev.date}`,
       });
     }
   }
@@ -81,7 +109,7 @@ export async function POST(req: NextRequest) {
     const failures = results.filter(r => !r.ok);
     const firstError = failures[0]?.error || null;
     console.log("Sync results:", ok, "ok,", failures.length, "fail. First error:", firstError);
-    return NextResponse.json({ ok, fail: failures.length, total: events.length, firstError });
+    return NextResponse.json({ ok, fail: failures.length, total: events.length, firstError, deleted_prior: deleted });
   } catch (e) {
     console.error("Sync route error:", e);
     return NextResponse.json({ error: String(e) }, { status: 500 });

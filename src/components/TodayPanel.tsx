@@ -29,7 +29,7 @@ const LUNAR_DAY_NAMES: Record<number, string> = {
   29:"二十九日", 30:"晦日",
 };
 
-export default function TodayPanel() {
+export default function TodayPanel({ compact = false }: { compact?: boolean }) {
   const [data, setData] = useState<TodayData | null>(null);
   const [error, setError] = useState("");
 
@@ -50,6 +50,88 @@ export default function TodayPanel() {
   const date = new Date(data.now);
   const weekdays = ["日曜日", "月曜日", "火曜日", "水曜日", "木曜日", "金曜日", "土曜日"];
   const lunarDayName = LUNAR_DAY_NAMES[data.lunar.lunarDay] || `${data.lunar.lunarDay}日`;
+
+  if (compact) {
+    return (
+      <div style={{ display: "flex", flexDirection: "column", gap: "0.35rem" }}>
+        {data.todaySekki && (
+          <div style={{
+            background: "var(--indigo)",
+            color: "#f0e6d3",
+            borderRadius: "5px",
+            padding: "0.35rem 0.5rem",
+            textAlign: "center",
+          }} className="fade-in">
+            <div style={{ fontSize: "0.55rem", letterSpacing: "0.12em", opacity: 0.85 }}>本日·二十四節気</div>
+            <div style={{ fontSize: "1.15rem", fontWeight: 700, letterSpacing: "0.08em", lineHeight: 1.2 }}>
+              {data.todaySekki.kanji}
+            </div>
+            <div style={{ fontSize: "0.65rem", opacity: 0.9 }}>{data.todaySekki.reading}</div>
+          </div>
+        )}
+
+        <div className="wa-card fade-in" style={{ padding: "0.5rem 0.65rem" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "0.35rem", flexWrap: "wrap" }}>
+            <div style={{ fontSize: "0.88rem", fontWeight: 600, lineHeight: 1.3 }}>
+              {date.getFullYear()}年{date.getMonth() + 1}月{date.getDate()}日
+              <span style={{ fontSize: "0.68rem", color: "var(--text2)", fontWeight: 400, marginLeft: "0.35rem" }}>
+                {weekdays[date.getDay()].replace("曜日", "")}
+              </span>
+            </div>
+            <div style={{
+              background: data.season.color,
+              borderRadius: "4px",
+              padding: "0.15rem 0.45rem",
+              fontSize: "0.78rem",
+            }}>
+              {data.season.emoji}{data.season.name}
+            </div>
+          </div>
+          <div className="wa-divider" style={{ margin: "0.35rem 0" }} />
+          <div style={{ fontSize: "0.72rem", color: "var(--text2)", marginBottom: "0.2rem" }}>旧暦</div>
+          <div style={{ fontSize: "0.78rem", lineHeight: 1.35 }}>
+            {data.lunar.lunarYear}年 {data.lunar.monthName}
+            <span style={{ color: "var(--text2)", fontSize: "0.68rem" }}>（{data.lunar.monthReading}）</span>
+            {" "}{lunarDayName}
+            <span style={{ color: "var(--text2)", fontSize: "0.68rem" }}>（{data.lunar.lunarDay}日）</span>
+          </div>
+          <div className="wa-divider" style={{ margin: "0.35rem 0" }} />
+          <div style={{ display: "flex", flexWrap: "wrap", gap: "0.5rem 0.75rem", alignItems: "baseline", fontSize: "0.78rem" }}>
+            <span>
+              <span style={{ color: "var(--text2)", fontSize: "0.65rem" }}>年干支</span>{" "}
+              <strong>{data.yearEto.eto}</strong>
+              <span style={{ color: "var(--text2)", fontSize: "0.65rem", marginLeft: "0.2rem" }}>{data.yearEto.reading}</span>
+            </span>
+            <span>
+              <span style={{ color: "var(--text2)", fontSize: "0.65rem" }}>六曜</span>{" "}
+              <strong style={{ color: data.rokuyo.color }}>{data.rokuyo.name}</strong>
+            </span>
+          </div>
+        </div>
+
+        <div className="wa-card fade-in" style={{ display: "flex", alignItems: "center", gap: "0.5rem", padding: "0.45rem 0.65rem" }}>
+          <MoonSvg age={data.moonAge} size={46} />
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontSize: "0.65rem", color: "var(--text2)" }}>月相</div>
+            <div style={{ fontSize: "0.88rem", fontWeight: 600, lineHeight: 1.25 }}>
+              {data.moonPhase.emoji} {data.moonPhase.name}
+              <span style={{ fontSize: "0.68rem", color: "var(--text2)", fontWeight: 400, marginLeft: "0.35rem" }}>
+                月齢{data.moonAge.toFixed(1)}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <div className="wa-card fade-in" style={{ padding: "0.4rem 0.65rem", fontSize: "0.72rem" }}>
+          <span style={{ color: "var(--text2)" }}>現在の節気</span>{" "}
+          <strong>{data.currentSekki.kanji}</strong>
+          <span style={{ color: "var(--text2)", marginLeft: "0.35rem" }}>
+            {data.currentSekki.reading} · 黄経{data.currentSekki.longitude}°
+          </span>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>

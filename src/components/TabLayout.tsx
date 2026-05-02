@@ -1,15 +1,19 @@
 "use client";
 
-import { useState, useEffect, ReactNode } from "react";
-import { useSearchParams, useRouter } from "next/navigation";
+import { useState, useEffect, ReactNode, type CSSProperties } from "react";
 
 interface Props {
   isAuthed: boolean;
   todayPanel: ReactNode;
+  /** iPhone「今日」: 日付と時計を1画面にまとめたコンテンツ */
+  todayPhoneStack: ReactNode;
+  /** iPad「今日」右カラム上部の時計（コンパクト推奨） */
+  ipadTodayClock: ReactNode;
   clock: ReactNode;
   calendar: ReactNode;
   sekki: ReactNode;
   sync: ReactNode;
+  guide: ReactNode;
 }
 
 const TABS = [
@@ -17,10 +21,11 @@ const TABS = [
   { id: "clock",    label: "時刻",  emoji: "⏰" },
   { id: "calendar", label: "暦",    emoji: "🗓" },
   { id: "sekki",    label: "節気",  emoji: "🌿" },
+  { id: "guide",    label: "解説",  emoji: "📖" },
   { id: "sync",     label: "同期",  emoji: "📅" },
 ];
 
-export default function TabLayout({ todayPanel, clock, calendar, sekki, sync }: Props) {
+export default function TabLayout({ isAuthed: _isAuthed, todayPanel, todayPhoneStack, ipadTodayClock, clock, calendar, sekki, sync, guide }: Props) {
   const [activeTab, setActiveTab] = useState("today");
   const [isIpad, setIsIpad]       = useState(false);
 
@@ -49,10 +54,11 @@ export default function TabLayout({ todayPanel, clock, calendar, sekki, sync }: 
   };
 
   const content: Record<string, ReactNode> = {
-    today: todayPanel,
+    today: todayPhoneStack,
     clock,
     calendar,
     sekki,
+    guide,
     sync,
   };
 
@@ -116,7 +122,7 @@ export default function TabLayout({ todayPanel, clock, calendar, sekki, sync }: 
                 {sync}
               </div>
               <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
-                <div style={{ display: "flex", justifyContent: "center" }}>{clock}</div>
+                <div style={{ display: "flex", justifyContent: "center" }}>{ipadTodayClock}</div>
                 {calendar}
               </div>
             </div>
@@ -143,7 +149,7 @@ export default function TabLayout({ todayPanel, clock, calendar, sekki, sync }: 
           paddingBottom: "calc(72px + env(safe-area-inset-bottom))",
           overflowY: "auto",
           WebkitOverflowScrolling: "touch" as never,
-        } as React.CSSProperties}
+        } as CSSProperties}
       >
         {content[activeTab]}
       </div>

@@ -1,9 +1,17 @@
 "use client";
 
-import { useState } from "react";
+import { useState, type CSSProperties } from "react";
 import type { MoonPhaseName } from "@/lib/moon-phases";
+import { GOOGLE_EVENT_COLOR_OPTIONS } from "@/lib/google-calendar";
 
-interface SyncResult { ok: number; fail: number; total: number; error?: string; firstError?: string }
+interface SyncResult {
+  ok: number;
+  fail: number;
+  total: number;
+  error?: string;
+  firstError?: string;
+  deleted_prior?: number;
+}
 
 const MOON_OPTIONS: { key: MoonPhaseName; label: string; emoji: string }[] = [
   { key: "新月", label: "新月", emoji: "🌑" },
@@ -11,6 +19,16 @@ const MOON_OPTIONS: { key: MoonPhaseName; label: string; emoji: string }[] = [
   { key: "満月", label: "満月", emoji: "🌕" },
   { key: "下弦", label: "下弦", emoji: "🌗" },
 ];
+
+const selectStyle: CSSProperties = {
+  border: "1px solid var(--border)",
+  borderRadius: "4px",
+  padding: "0.2rem 0.4rem",
+  background: "var(--paper)",
+  fontSize: "0.78rem",
+  color: "var(--text)",
+  maxWidth: "100%",
+};
 
 export default function GoogleCalendarSync({ isAuthed }: { isAuthed: boolean }) {
   const [year,    setYear]    = useState(new Date().getFullYear());
@@ -22,6 +40,10 @@ export default function GoogleCalendarSync({ isAuthed }: { isAuthed: boolean }) 
     下弦: true,
   });
   const [kyureki, setKyureki] = useState(false);
+  const [replaceExisting, setReplaceExisting] = useState(true);
+  const [sekkiColorId, setSekkiColorId] = useState("7");
+  const [moonColorId, setMoonColorId] = useState("5");
+  const [kyurekiColorId, setKyurekiColorId] = useState("2");
   const [loading, setLoading] = useState(false);
   const [result,  setResult]  = useState<SyncResult | null>(null);
 
@@ -47,6 +69,10 @@ export default function GoogleCalendarSync({ isAuthed }: { isAuthed: boolean }) 
           year,
           types,
           moonPhases: phases.length ? phases : undefined,
+          replaceExisting,
+          sekkiColorId,
+          moonColorId,
+          kyurekiColorId,
         }),
       });
       setResult(await res.json());
@@ -95,6 +121,47 @@ export default function GoogleCalendarSync({ isAuthed }: { isAuthed: boolean }) 
           </div>
 
           <label style={{
+            display: "flex",
+            alignItems: "flex-start",
+            gap: "0.4rem",
+            fontSize: "0.78rem",
+            cursor: "pointer",
+            color: "var(--text2)",
+          }}>
+            <input
+              type="checkbox"
+              checked={replaceExisting}
+              onChange={() => setReplaceExisting(!replaceExisting)}
+              style={{ accentColor: "var(--indigo)", marginTop: "2px" }}
+            />
+            <span>再同期で<b>同じ年・今回選んだ種類</b>について、以前このアプリが追加した予定を先に削除（重複を防ぐ）</span>
+          </label>
+
+          <div style={{ fontSize: "0.75rem", color: "var(--text2)" }}>
+            <div style={{ marginBottom: "0.35rem" }}>Googleカレンダーでの色（1〜11）</div>
+            <div style={{ display: "grid", gridTemplateColumns: "auto 1fr", gap: "0.35rem 0.75rem", alignItems: "center" }}>
+              <span>節気</span>
+              <select value={sekkiColorId} onChange={e => setSekkiColorId(e.target.value)} style={selectStyle}>
+                {GOOGLE_EVENT_COLOR_OPTIONS.map(o => (
+                  <option key={o.id} value={o.id}>{o.id}: {o.label}</option>
+                ))}
+              </select>
+              <span>月相（4乗共通）</span>
+              <select value={moonColorId} onChange={e => setMoonColorId(e.target.value)} style={selectStyle}>
+                {GOOGLE_EVENT_COLOR_OPTIONS.map(o => (
+                  <option key={o.id} value={o.id}>{o.id}: {o.label}</option>
+                ))}
+              </select>
+              <span>旧暦（日ごと）</span>
+              <select value={kyurekiColorId} onChange={e => setKyurekiColorId(e.target.value)} style={selectStyle}>
+                {GOOGLE_EVENT_COLOR_OPTIONS.map(o => (
+                  <option key={o.id} value={o.id}>{o.id}: {o.label}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          <label style={{
             display: "flex", alignItems: "center", gap: "0.4rem",
             fontSize: "0.85rem", cursor: "pointer",
           }}>
@@ -109,7 +176,7 @@ export default function GoogleCalendarSync({ isAuthed }: { isAuthed: boolean }) 
 
           <div>
             <div style={{ fontSize: "0.78rem", color: "var(--text2)", marginBottom: "0.35rem" }}>
-              月相の色（Google カレンダー上）: アプリ内ソースの CALENDAR_COLORS で変更可能
+              月の位相
             </div>
             <div style={{ display: "flex", gap: "0.75rem", flexWrap: "wrap" }}>
               {MOON_OPTIONS.map(({ key, label, emoji }) => (
@@ -142,6 +209,10 @@ export default function GoogleCalendarSync({ isAuthed }: { isAuthed: boolean }) 
             📿 旧暦（日ごと・約365件／年）
           </label>
 
+          <p style={{ fontSize: "0.72rem", color: "var(--text2)", margin: 0 }}>
+            アプリ外で手入力した予定の削除は Google カレンダー上での操作になります。このアプリ経由で追加した分は上の「先に削除」で置き換えできます。
+          </p>
+
           <button
             onClick={sync}
             disabled={loading || nothingSelected}
@@ -163,7 +234,12 @@ export default function GoogleCalendarSync({ isAuthed }: { isAuthed: boolean }) 
                 ? `エラー: ${result.error}`
                 : result.fail > 0 && result.ok === 0
                 ? `エラー: ${result.firstError || "不明なエラー"}`
-                : `✓ ${result.ok}件を追加しました（全${result.total}件${result.fail > 0 ? `、${result.fail}件失敗` : ""}）`
+                : <>
+                    {result.deleted_prior != null && result.deleted_prior > 0
+                      ? `（既存の同期分 ${result.deleted_prior} 件を削除）`
+                      : null}
+                    {` ✓ ${result.ok}件を追加しました（全${result.total}件${result.fail > 0 ? `、${result.fail}件失敗` : ""}）`}
+                  </>
               }
             </div>
           )}

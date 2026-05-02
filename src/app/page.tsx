@@ -4,6 +4,7 @@ import MonthCalendar from "@/components/MonthCalendar";
 import TraditionalClock from "@/components/TraditionalClock";
 import SekkiPanel from "@/components/SekkiPanel";
 import GoogleCalendarSync from "@/components/GoogleCalendarSync";
+import GuidePanel from "@/components/GuidePanel";
 
 export default function Home() {
   const cookieStore = cookies();
@@ -61,10 +62,18 @@ function Tabs({ isAuthed }: { isAuthed: boolean }) {
   return (
     <TabLayout
       isAuthed={isAuthed}
-      todayPanel={<TodayPanel />}
+      todayPanel={<TodayPanel compact />}
+      todayPhoneStack={
+        <div style={{ display: "flex", flexDirection: "column", gap: "0.35rem" }}>
+          <TodayPanel compact />
+          <TraditionalClock compact />
+        </div>
+      }
+      ipadTodayClock={<TraditionalClock compact />}
       clock={<TraditionalClock />}
       calendar={<MonthCalendar />}
       sekki={<SekkiPanel />}
+      guide={<GuidePanel />}
       sync={<GoogleCalendarSync isAuthed={isAuthed} />}
     />
   );

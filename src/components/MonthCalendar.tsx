@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, type TouchEvent } from "react";
 
 interface DayData {
   day: number;
@@ -27,6 +27,7 @@ export default function MonthCalendar() {
   const [month, setMonth] = useState(today.getMonth() + 1);
   const [data,  setData]  = useState<MonthData | null>(null);
   const [loading, setLoading] = useState(false);
+  const touchStart = useRef<{ x: number; y: number } | null>(null);
 
   useEffect(() => {
     setLoading(true);
@@ -45,12 +46,34 @@ export default function MonthCalendar() {
     else setMonth(m => m + 1);
   };
 
-  // 月の最初の曜日（0=日）
-  const firstWeekday = data ? new Date(year, month - 1, 1).getDay() : 0;
-  const WEEKDAYS = ["日", "月", "火", "水", "木", "金", "土"];
+  const onTouchStart = (e: TouchEvent) => {
+    const t = e.targetTouches[0];
+    touchStart.current = { x: t.clientX, y: t.clientY };
+  };
+  const onTouchEnd = (e: TouchEvent) => {
+    const start = touchStart.current;
+    touchStart.current = null;
+    if (!start) return;
+    const t = e.changedTouches[0];
+    const dx = t.clientX - start.x;
+    const dy = t.clientY - start.y;
+    if (Math.abs(dx) < 56 || Math.abs(dx) < Math.abs(dy)) return;
+    if (dx > 0) prevMonth();
+    else nextMonth();
+  };
+
+  // 月の1日の曜日（0=日）。月曜始まりグリッド用の左パディング（0〜6）
+  const firstWeekdaySunday0 = data ? new Date(year, month - 1, 1).getDay() : 0;
+  const leadingBlanks = (firstWeekdaySunday0 + 6) % 7;
+  const WEEKDAYS = ["月", "火", "水", "木", "金", "土", "日"];
 
   return (
-    <div className="wa-card fade-in">
+    <div
+      className="wa-card fade-in"
+      onTouchStart={onTouchStart}
+      onTouchEnd={onTouchEnd}
+      style={{ touchAction: "pan-y" }}
+    >
       {/* ヘッダー */}
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "1rem" }}>
         <button onClick={prevMonth} style={{
@@ -80,7 +103,7 @@ export default function MonthCalendar() {
             {WEEKDAYS.map((w, i) => (
               <div key={w} style={{
                 textAlign: "center", fontSize: "0.7rem", padding: "4px 0",
-                color: i === 0 ? "#c0392b" : i === 6 ? "#1e3a5f" : "var(--text2)",
+                color: i === 5 ? "#1e3a5f" : i === 6 ? "#c0392b" : "var(--text2)",
                 fontFamily: "var(--font-sans, sans-serif)",
               }}>{w}</div>
             ))}
@@ -89,16 +112,16 @@ export default function MonthCalendar() {
           {/* 日付グリッド */}
           <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: "2px" }}>
             {/* 空白セル */}
-            {Array.from({ length: firstWeekday }, (_, i) => (
+            {Array.from({ length: leadingBlanks }, (_, i) => (
               <div key={`empty-${i}`} />
             ))}
 
             {/* 日付セル */}
             {data.days.map(d => {
               const isToday = year === today.getFullYear() && month === today.getMonth() + 1 && d.day === today.getDate();
-              const weekdayIdx = (firstWeekday + d.day - 1) % 7;
-              const isSun = weekdayIdx === 0;
-              const isSat = weekdayIdx === 6;
+              const weekdayIdxMon0 = (leadingBlanks + d.day - 1) % 7;
+              const isSun = weekdayIdxMon0 === 6;
+              const isSat = weekdayIdxMon0 === 5;
               const seasonBg = SEASON_COLORS[d.season] || "transparent";
 
               return (
@@ -151,17 +174,22 @@ export default function MonthCalendar() {
           </div>
 
           {/* 凡例 */}
-          <div style={{ display: "flex", flexWrap: "wrap", gap: "0.75rem", marginTop: "1rem", fontSize: "0.7rem", color: "var(--text2)" }}>
-            {[
-              { emoji: "🌑", label: "新月" }, { emoji: "🌓", label: "上弦" },
-              { emoji: "🌕", label: "満月" }, { emoji: "🌗", label: "下弦" },
-            ].map(l => (
-              <span key={l.label}>{l.emoji} {l.label}</span>
-            ))}
-            <span style={{ display: "inline-flex", alignItems: "center", gap: "3px" }}>
-              <span style={{ display: "inline-block", width: "12px", height: "12px", background: "#1e3a5f", borderRadius: "2px" }} />
-              節気
-            </span>
+          <div style={{ marginTop: "1rem" }}>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: "0.75rem", fontSize: "0.7rem", color: "var(--text2)" }}>
+              {[
+                { emoji: "🌑", label: "新月" }, { emoji: "🌓", label: "上弦" },
+                { emoji: "🌕", label: "満月" }, { emoji: "🌗", label: "下弦" },
+              ].map(l => (
+                <span key={l.label}>{l.emoji} {l.label}</span>
+              ))}
+              <span style={{ display: "inline-flex", alignItems: "center", gap: "3px" }}>
+                <span style={{ display: "inline-block", width: "12px", height: "12px", background: "#1e3a5f", borderRadius: "2px" }} />
+                節気
+              </span>
+            </div>
+            <div style={{ fontSize: "0.65rem", color: "var(--text2)", marginTop: "0.5rem" }}>
+              カレンダー上を左右にスワイプすると前月・翌月に移動します（矢印ボタンでも操作可）。
+            </div>
           </div>
         </>
       )}
