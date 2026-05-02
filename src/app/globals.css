@@ -1,0 +1,163 @@
+@import url('https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@300;400;500;700&family=Noto+Sans+JP:wght@300;400;500&display=swap');
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --ink: #1a1008;
+  --paper: #fdf6e3;
+  --paper2: #f7eed8;
+  --gold: #c9a84c;
+  --vermilion: #c0392b;
+  --indigo: #1e3a5f;
+  --moss: #4a6741;
+  --plum: #7b4f7f;
+  --text: #2c1810;
+  --text2: #5a3e28;
+  --border: #d4b896;
+  /* iOS セーフエリア */
+  --safe-top:    env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-left:   env(safe-area-inset-left, 0px);
+  --safe-right:  env(safe-area-inset-right, 0px);
+}
+
+html {
+  font-size: 16px;
+  -webkit-text-size-adjust: 100%;
+  height: -webkit-fill-available;
+  /* iOS スクロールバウンスを抑制 */
+  overflow: hidden;
+}
+
+body {
+  font-family: 'Noto Serif JP', 'Hiragino Mincho ProN', 'YuMincho', serif;
+  background: var(--paper);
+  color: var(--text);
+  min-height: 100vh;
+  min-height: -webkit-fill-available;
+  min-height: 100dvh;
+  line-height: 1.8;
+  /* iOS のタップハイライトを無効化 */
+  -webkit-tap-highlight-color: transparent;
+  -webkit-touch-callout: none;
+  overflow-x: hidden;
+  overflow-y: auto;
+  /* iOS スクロール慣性 */
+  -webkit-overflow-scrolling: touch;
+}
+
+/* スクロールバー */
+::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+/* 和風カード */
+.wa-card {
+  background: var(--paper);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 1.25rem;
+  position: relative;
+  /* iOS シャドウ */
+  box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+}
+.wa-card::before {
+  content: '';
+  position: absolute;
+  top: 4px; left: 4px; right: 4px; bottom: 4px;
+  border: 1px solid rgba(201, 168, 76, 0.2);
+  border-radius: 9px;
+  pointer-events: none;
+}
+
+/* 区切り線 */
+.wa-divider {
+  height: 1px;
+  background: linear-gradient(to right, transparent, var(--border), transparent);
+  margin: 0.9rem 0;
+}
+
+/* 和風見出し */
+.wa-heading {
+  font-size: 0.65rem;
+  letter-spacing: 0.15em;
+  color: var(--text2);
+  font-family: 'Noto Sans JP', sans-serif;
+  font-weight: 300;
+  text-transform: uppercase;
+}
+
+/* ボタン */
+.btn-wa {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.65rem 1.5rem;
+  background: var(--indigo);
+  color: #f0e6d3;
+  border: none;
+  border-radius: 8px;
+  font-family: 'Noto Sans JP', sans-serif;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.15s;
+  text-decoration: none;
+  /* iOS タップフィードバック */
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+  min-height: 44px; /* iOS HIG 最小タップ領域 */
+}
+.btn-wa:active { opacity: 0.8; transform: scale(0.98); }
+.btn-wa.secondary {
+  background: transparent;
+  color: var(--indigo);
+  border: 1px solid var(--indigo);
+}
+
+/* アニメーション */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: none; }
+}
+.fade-in { animation: fadeIn 0.35s ease both; }
+
+@keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.4; } }
+.pulse { animation: pulse 1.8s ease-in-out infinite; }
+
+/* タブバーのタップ領域を最適化 */
+button {
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+  cursor: pointer;
+}
+
+/* セレクトボックス */
+select {
+  -webkit-appearance: none;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%235a3e28' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+  background-repeat: no-repeat;
+  background-position: right 0.5rem center;
+  background-size: 1.2em;
+  padding-right: 2rem !important;
+}
+
+/* チェックボックス */
+input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  min-width: 18px;
+  accent-color: var(--indigo);
+}
+
+/* モバイル最適化 */
+@media (max-width: 640px) {
+  html { font-size: 15px; }
+  .wa-card { padding: 0.9rem; border-radius: 10px; }
+}
+
+/* iPad 最適化 */
+@media (min-width: 768px) and (max-width: 1024px) {
+  html { font-size: 16px; }
+}

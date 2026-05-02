@@ -1,0 +1,30 @@
+{
+  "name": "wa-calendar",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "clean": "node -e \"require('fs').rmSync('.next',{recursive:true,force:true})\"",
+    "free-port": "node scripts/free-port.js 3333",
+    "dev": "next dev --port 3333",
+    "dev:clean": "npm run free-port && npm run clean && next dev --port 3333",
+    "build": "next build",
+    "start": "next start --port 3333"
+  },
+  "dependencies": {
+    "clsx": "^2.1.1",
+    "date-fns": "^3.6.0",
+    "googleapis": "^144.0.0",
+    "next": "14.2.29",
+    "react": "^18",
+    "react-dom": "^18",
+    "sharp": "^0.34.5",
+    "suncalc": "^1.9.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20",
+    "@types/react": "^18",
+    "@types/react-dom": "^18",
+    "@types/suncalc": "^1.8.4",
+    "typescript": "^5"
+  }
+}

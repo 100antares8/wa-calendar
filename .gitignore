@@ -1,0 +1,30 @@
+# dependencies
+node_modules
+.pnp
+.pnp.js
+
+# build / cache
+.next
+out
+build
+*.tsbuildinfo
+
+# env（秘密情報はコミットしない）
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# debug / IDE
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.DS_Store
+*.pem
+
+# Vercel
+.vercel
+
+# optional: uncomment if you use testing coverage
+# coverage
