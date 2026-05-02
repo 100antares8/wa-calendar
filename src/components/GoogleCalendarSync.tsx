@@ -2,7 +2,7 @@
 
 import { useState, type CSSProperties } from "react";
 import type { MoonPhaseName } from "@/lib/moon-phases";
-import { GOOGLE_EVENT_COLOR_OPTIONS } from "@/lib/google-calendar";
+import { GOOGLE_EVENT_COLOR_OPTIONS } from "@/lib/google-calendar-shared";
 
 interface SyncResult {
   ok: number;
