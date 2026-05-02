@@ -384,3 +384,28 @@ export function getSekkiDatesForYear(year: number): { date: Date; sekki: typeof 
   }
   return results;
 }
+
+/** グレゴリオ暦1年分の「その日の旧暦」（同期で約365件） */
+export function getKyurekiDayEventsForYear(year: number): {
+  date: string;
+  summary: string;
+  description: string;
+}[] {
+  const out: { date: string; summary: string; description: string }[] = [];
+  for (let offset = 0; offset < 370; offset++) {
+    const d = new Date(Date.UTC(year, 0, 1 + offset, 12, 0, 0));
+    if (d.getUTCFullYear() !== year) break;
+    const dateStr = d.toISOString().slice(0, 10);
+    const ld = getLunarDate(d);
+    const dayCall = LUNAR_DAY_NAMES[ld.lunarDay] || `${ld.lunarDay}日`;
+    out.push({
+      date: dateStr,
+      summary: `【旧暦】${ld.monthName}${ld.lunarDay}日`,
+      description:
+        `旧暦 ${ld.lunarYear}年 ${ld.monthName}（${ld.monthReading}）${ld.lunarDay}日\n`
+        + `${dayCall}\n`
+        + `年干支: ${ld.eto.eto}（${ld.eto.reading}）`,
+    });
+  }
+  return out;
+}

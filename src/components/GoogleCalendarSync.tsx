@@ -1,26 +1,53 @@
 "use client";
 
 import { useState } from "react";
+import type { MoonPhaseName } from "@/lib/moon-phases";
 
 interface SyncResult { ok: number; fail: number; total: number; error?: string; firstError?: string }
 
+const MOON_OPTIONS: { key: MoonPhaseName; label: string; emoji: string }[] = [
+  { key: "新月", label: "新月", emoji: "🌑" },
+  { key: "上弦", label: "上弦", emoji: "🌓" },
+  { key: "満月", label: "満月", emoji: "🌕" },
+  { key: "下弦", label: "下弦", emoji: "🌗" },
+];
+
 export default function GoogleCalendarSync({ isAuthed }: { isAuthed: boolean }) {
   const [year,    setYear]    = useState(new Date().getFullYear());
-  const [types,   setTypes]   = useState({ sekki: true, moon: true });
+  const [sekki,   setSekki]   = useState(true);
+  const [moonPhases, setMoonPhases] = useState<Record<MoonPhaseName, boolean>>({
+    新月: true,
+    上弦: true,
+    満月: true,
+    下弦: true,
+  });
+  const [kyureki, setKyureki] = useState(false);
   const [loading, setLoading] = useState(false);
   const [result,  setResult]  = useState<SyncResult | null>(null);
 
-  const toggleType = (t: keyof typeof types) => setTypes(prev => ({ ...prev, [t]: !prev[t] }));
+  const toggleMoon = (k: MoonPhaseName) =>
+    setMoonPhases(prev => ({ ...prev, [k]: !prev[k] }));
+
+  const selectedMoonCount = MOON_OPTIONS.filter(o => moonPhases[o.key]).length;
 
   const sync = async () => {
     setLoading(true);
     setResult(null);
     try {
-      const selectedTypes = Object.entries(types).filter(([,v]) => v).map(([k]) => k);
+      const types: string[] = [];
+      if (sekki) types.push("sekki");
+      const phases = MOON_OPTIONS.filter(o => moonPhases[o.key]).map(o => o.key);
+      if (phases.length) types.push("moon");
+      if (kyureki) types.push("kyureki");
+
       const res = await fetch("/api/calendar/sync", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ year, types: selectedTypes }),
+        body: JSON.stringify({
+          year,
+          types,
+          moonPhases: phases.length ? phases : undefined,
+        }),
       });
       setResult(await res.json());
     } catch (e) {
@@ -29,6 +56,8 @@ export default function GoogleCalendarSync({ isAuthed }: { isAuthed: boolean }) 
       setLoading(false);
     }
   };
+
+  const nothingSelected = !sekki && selectedMoonCount === 0 && !kyureki;
 
   return (
     <div className="wa-card">
@@ -40,7 +69,7 @@ export default function GoogleCalendarSync({ isAuthed }: { isAuthed: boolean }) 
       {!isAuthed ? (
         <div>
           <p style={{ fontSize: "0.8rem", color: "var(--text2)", marginBottom: "0.75rem" }}>
-            節気・月相をGoogleカレンダーに追加するには、まずGoogleアカウントでログインしてください。
+            節気・月相・旧暦をGoogleカレンダーに追加するには、まずGoogleアカウントでログインしてください。
           </p>
           <a href="/api/auth/google" className="btn-wa">
             Googleでログイン
@@ -65,29 +94,57 @@ export default function GoogleCalendarSync({ isAuthed }: { isAuthed: boolean }) 
             </select>
           </div>
 
-          <div style={{ display: "flex", gap: "1rem", flexWrap: "wrap" }}>
-            {[
-              { key: "sekki", label: "二十四節気", emoji: "🌿" },
-              { key: "moon",  label: "新月・満月", emoji: "🌕" },
-            ].map(({ key, label, emoji }) => (
-              <label key={key} style={{
-                display: "flex", alignItems: "center", gap: "0.4rem",
-                fontSize: "0.85rem", cursor: "pointer",
-              }}>
-                <input
-                  type="checkbox"
-                  checked={types[key as keyof typeof types]}
-                  onChange={() => toggleType(key as keyof typeof types)}
-                  style={{ accentColor: "var(--indigo)" }}
-                />
-                {emoji} {label}
-              </label>
-            ))}
+          <label style={{
+            display: "flex", alignItems: "center", gap: "0.4rem",
+            fontSize: "0.85rem", cursor: "pointer",
+          }}>
+            <input
+              type="checkbox"
+              checked={sekki}
+              onChange={() => setSekki(!sekki)}
+              style={{ accentColor: "var(--indigo)" }}
+            />
+            🌿 二十四節気
+          </label>
+
+          <div>
+            <div style={{ fontSize: "0.78rem", color: "var(--text2)", marginBottom: "0.35rem" }}>
+              月相の色（Google カレンダー上）: アプリ内ソースの CALENDAR_COLORS で変更可能
+            </div>
+            <div style={{ display: "flex", gap: "0.75rem", flexWrap: "wrap" }}>
+              {MOON_OPTIONS.map(({ key, label, emoji }) => (
+                <label key={key} style={{
+                  display: "flex", alignItems: "center", gap: "0.35rem",
+                  fontSize: "0.82rem", cursor: "pointer",
+                }}>
+                  <input
+                    type="checkbox"
+                    checked={moonPhases[key]}
+                    onChange={() => toggleMoon(key)}
+                    style={{ accentColor: "var(--indigo)" }}
+                  />
+                  {emoji} {label}
+                </label>
+              ))}
+            </div>
           </div>
+
+          <label style={{
+            display: "flex", alignItems: "center", gap: "0.4rem",
+            fontSize: "0.85rem", cursor: "pointer",
+          }}>
+            <input
+              type="checkbox"
+              checked={kyureki}
+              onChange={() => setKyureki(!kyureki)}
+              style={{ accentColor: "var(--indigo)" }}
+            />
+            📿 旧暦（日ごと・約365件／年）
+          </label>
 
           <button
             onClick={sync}
-            disabled={loading || Object.values(types).every(v => !v)}
+            disabled={loading || nothingSelected}
             className="btn-wa"
             style={{ alignSelf: "flex-start" }}
           >

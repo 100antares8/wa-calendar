@@ -1,4 +1,5 @@
 import { google } from "googleapis";
+import type { MoonPhaseName } from "@/lib/moon-phases";
 
 /** Google Console の「承認済みリダイレクト URI」と完全一致させること */
 export function getGoogleRedirectUri(): string {
@@ -100,11 +101,27 @@ export interface CalendarEventInput {
   colorId?: string;
 }
 
-// Google Calendar の色ID
+// Google Calendar の色ID（変えたいときはここだけ編集）
 // 1=Lavender, 2=Sage, 3=Grape, 4=Flamingo, 5=Banana, 6=Tangerine, 7=Peacock, 8=Graphite, 9=Blueberry, 10=Basil, 11=Tomato
 export const CALENDAR_COLORS = {
-  sekki: "7",    // Peacock（節気）
-  shingetsu: "8", // Graphite（新月）
-  mangetsu: "5",  // Banana（満月）
-  season: "6",    // Tangerine（季節）
+  sekki: "7",     // 節気
+  shingetsu: "8", // 新月
+  jogen: "9",     // 上弦
+  mangetsu: "5",  // 満月
+  gekko: "3",     // 下弦
+  kyureki: "2",   // 旧暦（日ごと）
+  season: "6",
 };
+
+export function calendarColorForMoonPhase(phase: MoonPhaseName): string {
+  switch (phase) {
+    case "新月":
+      return CALENDAR_COLORS.shingetsu;
+    case "上弦":
+      return CALENDAR_COLORS.jogen;
+    case "満月":
+      return CALENDAR_COLORS.mangetsu;
+    case "下弦":
+      return CALENDAR_COLORS.gekko;
+  }
+}

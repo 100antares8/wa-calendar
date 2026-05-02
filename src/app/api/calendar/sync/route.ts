@@ -1,7 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createCalendarEvents, CALENDAR_COLORS, CalendarEventInput } from "@/lib/google-calendar";
-import { getSekkiDatesForYear } from "@/lib/japanese-calendar";
-import { getMoonEventsForYear } from "@/lib/moon-phases";
+import {
+  createCalendarEvents,
+  CALENDAR_COLORS,
+  CalendarEventInput,
+  calendarColorForMoonPhase,
+} from "@/lib/google-calendar";
+import { getSekkiDatesForYear, getKyurekiDayEventsForYear } from "@/lib/japanese-calendar";
+import { getMoonEventsForYear, type MoonPhaseName } from "@/lib/moon-phases";
+
+const ALL_MOON_PHASES: MoonPhaseName[] = ["新月", "上弦", "満月", "下弦"];
 
 /** Vercel Pro 等で長めの同期を許可（Hobby は最大 10s のまま） */
 export const maxDuration = 60;
@@ -17,6 +24,11 @@ export async function POST(req: NextRequest) {
   const body = await req.json().catch(() => ({}));
   const year  = body.year  || new Date().getFullYear();
   const types = body.types || ["sekki", "moon"];
+
+  const mp = body.moonPhases;
+  const moonPhaseFilter: MoonPhaseName[] | null = Array.isArray(mp)
+    ? (mp.filter((p: unknown) => typeof p === "string" && ALL_MOON_PHASES.includes(p as MoonPhaseName)) as MoonPhaseName[])
+    : null;
 
   const events: CalendarEventInput[] = [];
 
@@ -36,14 +48,29 @@ export async function POST(req: NextRequest) {
 
   if (types.includes("moon")) {
     const moonEvents = getMoonEventsForYear(year);
+    const allow = new Set<MoonPhaseName>(
+      moonPhaseFilter && moonPhaseFilter.length > 0 ? moonPhaseFilter : ALL_MOON_PHASES,
+    );
     for (const ev of moonEvents) {
+      if (!allow.has(ev.phase)) continue;
       const dateStr = ev.jst.toISOString().slice(0, 10);
       const timeStr = `${ev.jst.getHours().toString().padStart(2, "0")}:${ev.jst.getMinutes().toString().padStart(2, "0")}`;
       events.push({
         summary: `${ev.emoji}${ev.phase}（${timeStr} JST）`,
         description: `${ev.phase}は${dateStr} ${timeStr} JST`,
         date: dateStr,
-        colorId: ev.phase === "満月" ? CALENDAR_COLORS.mangetsu : CALENDAR_COLORS.shingetsu,
+        colorId: calendarColorForMoonPhase(ev.phase),
+      });
+    }
+  }
+
+  if (types.includes("kyureki")) {
+    for (const ev of getKyurekiDayEventsForYear(year)) {
+      events.push({
+        summary: ev.summary,
+        description: ev.description,
+        date: ev.date,
+        colorId: CALENDAR_COLORS.kyureki,
       });
     }
   }

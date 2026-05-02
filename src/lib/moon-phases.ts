@@ -178,20 +178,29 @@ export function getMoonPhaseLabel(age: number): { name: string; emoji: string } 
   return { name: "晦（つごもり）", emoji: "🌑" };
 }
 
-// 年間の新月・満月一覧
+// 年間の新月・上弦・満月・下弦一覧
 export function getMoonEventsForYear(year: number): MoonPhaseEvent[] {
   const events: MoonPhaseEvent[] = [];
   const kStart = Math.floor((year - 2000) * 12.3685) - 1;
   for (let k = kStart; k <= kStart + 14; k++) {
     const phases: { phase: MoonPhaseName; jd: number }[] = [
       { phase: "新月", jd: getNewMoonJD(k) },
+      { phase: "上弦", jd: getMoonPhaseJD(k, 0.25) },
       { phase: "満月", jd: getMoonPhaseJD(k, 0.5) },
+      { phase: "下弦", jd: getMoonPhaseJD(k, 0.75) },
     ];
     for (const { phase, jd } of phases) {
       const utc = jdToDate(jd);
       const jst = new Date(utc.getTime() + 9 * 3600000);
       if (jst.getFullYear() === year) {
-        events.push({ date: utc, jst, phase, emoji: PHASE_EMOJI[phase], age: 0 });
+        const newMoonJD = getNewMoonJD(k);
+        events.push({
+          date: utc,
+          jst,
+          phase,
+          emoji: PHASE_EMOJI[phase],
+          age: jd - newMoonJD,
+        });
       }
     }
   }
