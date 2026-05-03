@@ -1,10 +1,11 @@
 import { cookies } from "next/headers";
+import TabLayout from "@/components/TabLayout";
 import TodayPanel from "@/components/TodayPanel";
 import MonthCalendar from "@/components/MonthCalendar";
 import TraditionalClock from "@/components/TraditionalClock";
-import SekkiPanel from "@/components/SekkiPanel";
+import SekkiGuidePanel from "@/components/SekkiGuidePanel";
+import SeasonalKigoPanel from "@/components/SeasonalKigoPanel";
 import GoogleCalendarSync from "@/components/GoogleCalendarSync";
-import GuidePanel from "@/components/GuidePanel";
 
 export default function Home() {
   const cookieStore = cookies();
@@ -12,7 +13,6 @@ export default function Home() {
 
   return (
     <div style={{ minHeight: "100vh", background: "var(--paper)" }}>
-      {/* ヘッダー */}
       <header style={{
         borderBottom: "1px solid var(--border)",
         padding: "0.75rem 1rem",
@@ -45,18 +45,12 @@ export default function Home() {
         )}
       </header>
 
-      {/* メインコンテンツ */}
       <main style={{ maxWidth: "1100px", margin: "0 auto", padding: "1rem" }}>
-
-        {/* タブナビゲーション（モバイル向け） */}
         <Tabs isAuthed={isAuthed} />
       </main>
     </div>
   );
 }
-
-// タブ切り替えUIはクライアントコンポーネントで実装
-import TabLayout from "@/components/TabLayout";
 
 function Tabs({ isAuthed }: { isAuthed: boolean }) {
   return (
@@ -72,8 +66,8 @@ function Tabs({ isAuthed }: { isAuthed: boolean }) {
       ipadTodayClock={<TraditionalClock compact />}
       clock={<TraditionalClock />}
       calendar={<MonthCalendar />}
-      sekki={<SekkiPanel />}
-      guide={<GuidePanel />}
+      sekkiGuide={<SekkiGuidePanel />}
+      seasonalKigo={<SeasonalKigoPanel />}
       sync={<GoogleCalendarSync isAuthed={isAuthed} />}
     />
   );

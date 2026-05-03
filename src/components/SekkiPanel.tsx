@@ -1,6 +1,6 @@
 "use client";
 
-import { SEKKI_24, KOFU_72, getSeason } from "@/lib/japanese-calendar";
+import { SEKKI_24, KOFU_72, getCurrentSekki } from "@/lib/japanese-calendar";
 
 const SEASON_STYLE: Record<string, { bg: string; text: string; border: string }> = {
   "春": { bg: "#fce7f3", text: "#9d174d", border: "#fbcfe8" },
@@ -18,20 +18,7 @@ function sekkiToSeason(longitude: number): string {
 }
 
 export default function SekkiPanel() {
-  const now = new Date();
-  const currentSunLon = (() => {
-    // 現在の太陽黄経の簡易計算
-    const dayOfYear = Math.floor((now.getTime() - new Date(now.getFullYear(), 0, 0).getTime()) / 86400000);
-    return ((dayOfYear - 80) * (360 / 365.25) + 360) % 360;
-  })();
-
-  // 現在どの節気か
-  let currentSekkiIdx = 0;
-  for (let i = 0; i < SEKKI_24.length; i++) {
-    if (currentSunLon >= SEKKI_24[i].longitude) currentSekkiIdx = i;
-  }
-
-  // 季節グループ
+  const current = getCurrentSekki(new Date());
   const seasons = ["春", "夏", "秋", "冬"];
   const seasonGroups: Record<string, typeof SEKKI_24> = { "春": [], "夏": [], "秋": [], "冬": [] };
   // 春から順に並べる
@@ -66,7 +53,7 @@ export default function SekkiPanel() {
             </div>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: "0" }}>
               {seasonGroups[season].map((s, i) => {
-                const isCurrent = s.longitude === SEKKI_24[currentSekkiIdx].longitude;
+                const isCurrent = s.longitude === current.longitude;
                 const kos = KOFU_72.filter(k => k.sekki === s.name);
                 return (
                   <div key={s.name} style={{

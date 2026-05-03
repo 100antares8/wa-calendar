@@ -285,11 +285,11 @@ export function getLunarDate(date: Date): {
   isLeapMonth: boolean; monthName: string; monthReading: string;
   eto: { eto: string; reading: string };
 } {
-  const jd = dateToJD(date) + 9 / 24; // JST
-  const year = date.getFullYear();
+  const jd = dateToJD(date) + 9 / 24; // JST に合わせた補正
+  const year = date.getUTCFullYear();
 
   // 今月・先月・来月の朔を探す
-  let k = Math.floor(getKForYearMonth(year, date.getMonth() + 1));
+  let k = Math.floor(getKForYearMonth(year, date.getUTCMonth() + 1));
   const newMoons: number[] = [];
   for (let i = k - 2; i <= k + 14; i++) {
     newMoons.push(getNewMoonJD(i) + 9 / 24);
@@ -310,7 +310,7 @@ export function getLunarDate(date: Date): {
   const refNewMoon = getNewMoonJD(Math.floor(getKForYearMonth(year, 1))) + 9 / 24;
   const lunarMonthApprox = Math.round((moonStart - refNewMoon) / 29.53);
   const lunarMonth = ((lunarMonthApprox % 12) + 12) % 12 + 1;
-  const lunarYear = year - (lunarMonth > 9 && date.getMonth() < 3 ? 1 : 0);
+  const lunarYear = year - (lunarMonth > 9 && date.getUTCMonth() < 3 ? 1 : 0);
 
   return {
     lunarYear,
@@ -363,7 +363,7 @@ export function getRokuyo(lunarMonth: number, lunarDay: number): {
 
 // ---- 季節 ----------------------------------------
 export function getSeason(date: Date): { name: string; kanji: string; color: string; emoji: string } {
-  const m = date.getMonth() + 1;
+  const m = date.getUTCMonth() + 1;
   if (m >= 3 && m <= 5) return { name: "春", kanji: "春", color: "#f9a8d4", emoji: "🌸" };
   if (m >= 6 && m <= 8) return { name: "夏", kanji: "夏", color: "#6ee7b7", emoji: "🌿" };
   if (m >= 9 && m <= 11) return { name: "秋", kanji: "秋", color: "#fbbf24", emoji: "🍁" };

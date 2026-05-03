@@ -1,10 +1,18 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import MoonSvg from "./MoonSvg";
+import { getDailySeasonalBundle } from "@/lib/daily-seasonal-wisdom";
 
 interface TodayData {
   now: string;
+  jst: {
+    y: number;
+    m: number;
+    d: number;
+    weekdayShort: string;
+    weekdayLabel: string;
+  };
   lunar: {
     lunarYear: number; lunarMonth: number; lunarDay: number;
     monthName: string; monthReading: string;
@@ -29,31 +37,83 @@ const LUNAR_DAY_NAMES: Record<number, string> = {
   29:"二十九日", 30:"晦日",
 };
 
-export default function TodayPanel({ compact = false }: { compact?: boolean }) {
+function useTodayData() {
   const [data, setData] = useState<TodayData | null>(null);
   const [error, setError] = useState("");
+  const [tick, setTick] = useState(0);
 
-  useEffect(() => {
+  const load = () => {
     fetch("/api/today")
       .then(r => r.json())
       .then(setData)
       .catch(() => setError("読み込みエラー"));
+  };
+
+  useEffect(() => {
+    load();
+  }, [tick]);
+
+  useEffect(() => {
+    const id = setInterval(() => setTick(t => t + 1), 60_000);
+    const onVis = () => {
+      if (document.visibilityState === "visible") setTick(t => t + 1);
+    };
+    document.addEventListener("visibilitychange", onVis);
+    return () => {
+      clearInterval(id);
+      document.removeEventListener("visibilitychange", onVis);
+    };
   }, []);
 
+  return { data, error };
+}
+
+function TodayFeatured({ jst }: { jst: { y: number; m: number; d: number } }) {
+  const bundle = useMemo(() => getDailySeasonalBundle(jst), [jst.y, jst.m, jst.d]);
+  const f = bundle.featured;
+  const kindLabel =
+    bundle.featuredKind === "proverb" ? "ことわざ・熟語"
+    : bundle.featuredKind === "figure" ? "先人の一句"
+    : bundle.featuredKind === "tea" ? "茶の言葉"
+    : "自然の一句";
+
+  return (
+    <div className="wa-card fade-in" style={{
+      padding: "0.55rem 0.75rem",
+      borderLeft: "4px solid var(--indigo)",
+      background: "rgba(30,58,95,0.05)",
+    }}>
+      <div style={{ fontSize: "0.62rem", color: "var(--text2)", letterSpacing: "0.1em", marginBottom: "0.25rem" }}>
+        今日の季語 · {kindLabel}
+      </div>
+      <p style={{ fontSize: "0.88rem", fontWeight: 600, lineHeight: 1.45, margin: "0 0 0.3rem" }}>{f.text}</p>
+      {f.attribution && (
+        <div style={{ fontSize: "0.72rem", color: "var(--text2)", marginBottom: "0.3rem" }}>— {f.attribution}</div>
+      )}
+      <p style={{ fontSize: "0.72rem", color: "var(--text2)", lineHeight: 1.5, margin: 0 }}>{f.note}</p>
+    </div>
+  );
+}
+
+export default function TodayPanel({ compact = false }: { compact?: boolean }) {
+  const { data, error } = useTodayData();
+
   if (error) return <div style={{ color: "red" }}>{error}</div>;
-  if (!data) return (
+  if (!data?.jst) return (
     <div style={{ padding: "2rem", textAlign: "center", color: "var(--text2)" }} className="pulse">
       暦を紐解いています…
     </div>
   );
 
-  const date = new Date(data.now);
-  const weekdays = ["日曜日", "月曜日", "火曜日", "水曜日", "木曜日", "金曜日", "土曜日"];
+  const { jst } = data;
   const lunarDayName = LUNAR_DAY_NAMES[data.lunar.lunarDay] || `${data.lunar.lunarDay}日`;
+  const heading = `${jst.y}年${jst.m}月${jst.d}日`;
 
   if (compact) {
     return (
       <div style={{ display: "flex", flexDirection: "column", gap: "0.35rem" }}>
+        <TodayFeatured jst={jst} />
+
         {data.todaySekki && (
           <div style={{
             background: "var(--indigo)",
@@ -73,9 +133,9 @@ export default function TodayPanel({ compact = false }: { compact?: boolean }) {
         <div className="wa-card fade-in" style={{ padding: "0.5rem 0.65rem" }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "0.35rem", flexWrap: "wrap" }}>
             <div style={{ fontSize: "0.88rem", fontWeight: 600, lineHeight: 1.3 }}>
-              {date.getFullYear()}年{date.getMonth() + 1}月{date.getDate()}日
+              {heading}
               <span style={{ fontSize: "0.68rem", color: "var(--text2)", fontWeight: 400, marginLeft: "0.35rem" }}>
-                {weekdays[date.getDay()].replace("曜日", "")}
+                {jst.weekdayShort}
               </span>
             </div>
             <div style={{
@@ -86,6 +146,9 @@ export default function TodayPanel({ compact = false }: { compact?: boolean }) {
             }}>
               {data.season.emoji}{data.season.name}
             </div>
+          </div>
+          <div style={{ fontSize: "0.62rem", color: "var(--text2)", marginTop: "0.25rem" }}>
+            グレゴリオ日付は日本標準時（JST）基準です。
           </div>
           <div className="wa-divider" style={{ margin: "0.35rem 0" }} />
           <div style={{ fontSize: "0.72rem", color: "var(--text2)", marginBottom: "0.2rem" }}>旧暦</div>
@@ -136,7 +199,8 @@ export default function TodayPanel({ compact = false }: { compact?: boolean }) {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
 
-      {/* 今日の節気（あれば） */}
+      <TodayFeatured jst={jst} />
+
       {data.todaySekki && (
         <div style={{
           background: "var(--indigo)",
@@ -153,19 +217,20 @@ export default function TodayPanel({ compact = false }: { compact?: boolean }) {
         </div>
       )}
 
-      {/* 今日の日付情報 */}
       <div className="wa-card fade-in">
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: "0.5rem" }}>
           <div>
             <div className="wa-heading">今日の日付</div>
             <div style={{ fontSize: "1.1rem", marginTop: "0.25rem" }}>
-              {date.getFullYear()}年{date.getMonth()+1}月{date.getDate()}日
+              {heading}
               <span style={{ fontSize: "0.8rem", color: "var(--text2)", marginLeft: "0.5rem" }}>
-                {weekdays[date.getDay()]}
+                {jst.weekdayLabel}
               </span>
             </div>
+            <div style={{ fontSize: "0.7rem", color: "var(--text2)", marginTop: "0.2rem" }}>
+              グレゴリオ暦・日本標準時（JST）の「今日」です。
+            </div>
           </div>
-          {/* 季節 */}
           <div style={{
             background: data.season.color,
             borderRadius: "6px",
@@ -178,7 +243,6 @@ export default function TodayPanel({ compact = false }: { compact?: boolean }) {
 
         <div className="wa-divider" />
 
-        {/* 旧暦 */}
         <div className="wa-heading">旧暦</div>
         <div style={{ marginTop: "0.35rem", display: "flex", flexWrap: "wrap", gap: "0.5rem", alignItems: "baseline" }}>
           <span style={{ fontSize: "0.9rem" }}>
@@ -200,7 +264,6 @@ export default function TodayPanel({ compact = false }: { compact?: boolean }) {
 
         <div className="wa-divider" />
 
-        {/* 干支・六曜 */}
         <div style={{ display: "flex", gap: "1rem", flexWrap: "wrap" }}>
           <div>
             <div className="wa-heading">干支（年）</div>
@@ -223,7 +286,6 @@ export default function TodayPanel({ compact = false }: { compact?: boolean }) {
         </div>
       </div>
 
-      {/* 月 */}
       <div className="wa-card fade-in" style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
         <MoonSvg age={data.moonAge} size={70} />
         <div style={{ flex: 1 }}>
@@ -234,7 +296,6 @@ export default function TodayPanel({ compact = false }: { compact?: boolean }) {
           <div style={{ fontSize: "0.8rem", color: "var(--text2)" }}>
             月齢 {data.moonAge.toFixed(1)}
           </div>
-          {/* 月齢バー */}
           <div style={{ height: "4px", background: "var(--border)", borderRadius: "2px", marginTop: "0.5rem" }}>
             <div style={{
               height: "100%", borderRadius: "2px",
@@ -245,7 +306,6 @@ export default function TodayPanel({ compact = false }: { compact?: boolean }) {
         </div>
       </div>
 
-      {/* 現在の節気 */}
       <div className="wa-card fade-in">
         <div className="wa-heading">現在の節気</div>
         <div style={{ marginTop: "0.35rem" }}>

@@ -4,7 +4,6 @@ import {
   CALENDAR_COLORS,
   CalendarEventInput,
   calendarColorForMoonPhase,
-  deleteWaCalendarEventsForKinds,
 } from "@/lib/google-calendar";
 import { getSekkiDatesForYear, getKyurekiDayEventsForYear } from "@/lib/japanese-calendar";
 import { getMoonEventsForYear, type MoonPhaseName } from "@/lib/moon-phases";
@@ -36,24 +35,11 @@ export async function POST(req: NextRequest) {
     ? (mp.filter((p: unknown) => typeof p === "string" && ALL_MOON_PHASES.includes(p as MoonPhaseName)) as MoonPhaseName[])
     : null;
 
-  const replaceExisting = body.replaceExisting !== false;
-
   const sekkiColorId = parseColorId(body.sekkiColorId, CALENDAR_COLORS.sekki);
   const moonColorId = body.moonColorId != null && body.moonColorId !== ""
     ? parseColorId(body.moonColorId, CALENDAR_COLORS.mangetsu)
     : undefined;
   const kyurekiColorId = parseColorId(body.kyurekiColorId, CALENDAR_COLORS.kyureki);
-
-  const replaceKinds = new Set<"sekki" | "moon" | "kyureki">();
-  if (types.includes("sekki")) replaceKinds.add("sekki");
-  if (types.includes("moon")) replaceKinds.add("moon");
-  if (types.includes("kyureki")) replaceKinds.add("kyureki");
-
-  let deleted = 0;
-  if (replaceExisting && replaceKinds.size > 0) {
-    const d = await deleteWaCalendarEventsForKinds(accessToken, refreshToken, year, replaceKinds);
-    deleted = d.deleted;
-  }
 
   const events: CalendarEventInput[] = [];
 
@@ -109,7 +95,7 @@ export async function POST(req: NextRequest) {
     const failures = results.filter(r => !r.ok);
     const firstError = failures[0]?.error || null;
     console.log("Sync results:", ok, "ok,", failures.length, "fail. First error:", firstError);
-    return NextResponse.json({ ok, fail: failures.length, total: events.length, firstError, deleted_prior: deleted });
+    return NextResponse.json({ ok, fail: failures.length, total: events.length, firstError });
   } catch (e) {
     console.error("Sync route error:", e);
     return NextResponse.json({ error: String(e) }, { status: 500 });

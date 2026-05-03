@@ -5,37 +5,44 @@ import { useState, useEffect, ReactNode, type CSSProperties } from "react";
 interface Props {
   isAuthed: boolean;
   todayPanel: ReactNode;
-  /** iPhone「今日」: 日付と時計を1画面にまとめたコンテンツ */
   todayPhoneStack: ReactNode;
-  /** iPad「今日」右カラム上部の時計（コンパクト推奨） */
   ipadTodayClock: ReactNode;
   clock: ReactNode;
   calendar: ReactNode;
-  sekki: ReactNode;
+  sekkiGuide: ReactNode;
+  seasonalKigo: ReactNode;
   sync: ReactNode;
-  guide: ReactNode;
 }
 
 const TABS = [
-  { id: "today",    label: "今日",  emoji: "☀️" },
-  { id: "clock",    label: "時刻",  emoji: "⏰" },
-  { id: "calendar", label: "暦",    emoji: "🗓" },
-  { id: "sekki",    label: "節気",  emoji: "🌿" },
-  { id: "guide",    label: "解説",  emoji: "📖" },
-  { id: "sync",     label: "同期",  emoji: "📅" },
+  { id: "today",    label: "今日",    emoji: "☀️" },
+  { id: "clock",    label: "時刻",    emoji: "⏰" },
+  { id: "calendar", label: "暦",      emoji: "🗓" },
+  { id: "sekki",    label: "節気・解説", emoji: "🌿" },
+  { id: "kigo",     label: "季語",    emoji: "🎋" },
+  { id: "sync",     label: "同期",    emoji: "📅" },
 ];
 
-export default function TabLayout({ isAuthed: _isAuthed, todayPanel, todayPhoneStack, ipadTodayClock, clock, calendar, sekki, sync, guide }: Props) {
+export default function TabLayout({
+  isAuthed: _isAuthed,
+  todayPanel,
+  todayPhoneStack,
+  ipadTodayClock,
+  clock,
+  calendar,
+  sekkiGuide,
+  seasonalKigo,
+  sync,
+}: Props) {
   const [activeTab, setActiveTab] = useState("today");
   const [isIpad, setIsIpad]       = useState(false);
 
   useEffect(() => {
-    // URLパラメータからタブを復元
     const params = new URLSearchParams(window.location.search);
-    const tab = params.get("tab");
+    let tab = params.get("tab");
+    if (tab === "guide") tab = "sekki";
     if (tab && TABS.some(t => t.id === tab)) setActiveTab(tab);
 
-    // iPad判定（768px以上）
     const mq = window.matchMedia("(min-width: 768px)");
     setIsIpad(mq.matches);
     const handler = (e: MediaQueryListEvent) => setIsIpad(e.matches);
@@ -45,11 +52,9 @@ export default function TabLayout({ isAuthed: _isAuthed, todayPanel, todayPhoneS
 
   const switchTab = (id: string) => {
     setActiveTab(id);
-    // URLを更新（ブックマーク対応）
     const url = new URL(window.location.href);
     url.searchParams.set("tab", id);
     window.history.replaceState({}, "", url.toString());
-    // タップ時のバイブレーション（対応デバイスのみ）
     if (navigator.vibrate) navigator.vibrate(10);
   };
 
@@ -57,12 +62,11 @@ export default function TabLayout({ isAuthed: _isAuthed, todayPanel, todayPhoneS
     today: todayPhoneStack,
     clock,
     calendar,
-    sekki,
-    guide,
+    sekki: sekkiGuide,
+    kigo: seasonalKigo,
     sync,
   };
 
-  // iPad以上: サイドバー + コンテンツ
   if (isIpad) {
     return (
       <div style={{
@@ -70,7 +74,6 @@ export default function TabLayout({ isAuthed: _isAuthed, todayPanel, todayPhoneS
         gap: "0",
         minHeight: "calc(100dvh - 60px)",
       }}>
-        {/* サイドバーナビ */}
         <nav style={{
           width: "80px",
           flexShrink: 0,
@@ -88,10 +91,11 @@ export default function TabLayout({ isAuthed: _isAuthed, todayPanel, todayPhoneS
           {TABS.map(tab => (
             <button
               key={tab.id}
+              type="button"
               onClick={() => switchTab(tab.id)}
               style={{
                 width: "64px",
-                height: "64px",
+                minHeight: "56px",
                 display: "flex",
                 flexDirection: "column",
                 alignItems: "center",
@@ -101,22 +105,21 @@ export default function TabLayout({ isAuthed: _isAuthed, todayPanel, todayPhoneS
                 color: activeTab === tab.id ? "#f0e6d3" : "var(--text2)",
                 border: "none",
                 borderRadius: "12px",
-                fontSize: "0.65rem",
+                fontSize: "0.58rem",
                 fontFamily: "'Noto Sans JP', sans-serif",
                 transition: "all 0.15s",
+                padding: "6px 4px",
               }}
             >
-              <span style={{ fontSize: "1.4rem", lineHeight: 1 }}>{tab.emoji}</span>
-              <span>{tab.label}</span>
+              <span style={{ fontSize: "1.35rem", lineHeight: 1 }}>{tab.emoji}</span>
+              <span style={{ textAlign: "center", lineHeight: 1.15 }}>{tab.label}</span>
             </button>
           ))}
         </nav>
 
-        {/* メインコンテンツ */}
         <div style={{ flex: 1, padding: "1.25rem", overflowY: "auto" }} key={activeTab} className="fade-in">
-          {/* iPad: 2カラムグリッド（today と calendar のみ） */}
           {activeTab === "today" ? (
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1.25rem", maxWidth: "900px" }}>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1.25rem", maxWidth: "1000px" }}>
               <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
                 {todayPanel}
                 {sync}
@@ -127,7 +130,7 @@ export default function TabLayout({ isAuthed: _isAuthed, todayPanel, todayPhoneS
               </div>
             </div>
           ) : (
-            <div style={{ maxWidth: "720px" }}>
+            <div style={{ maxWidth: "900px" }}>
               {content[activeTab]}
             </div>
           )}
@@ -136,10 +139,8 @@ export default function TabLayout({ isAuthed: _isAuthed, todayPanel, todayPhoneS
     );
   }
 
-  // iPhone: ボトムタブバー
   return (
     <div style={{ display: "flex", flexDirection: "column", minHeight: "calc(100dvh - 60px)" }}>
-      {/* スクロール可能なコンテンツ */}
       <div
         key={activeTab}
         className="fade-in"
@@ -154,7 +155,6 @@ export default function TabLayout({ isAuthed: _isAuthed, todayPanel, todayPhoneS
         {content[activeTab]}
       </div>
 
-      {/* ボトムタブバー（iOS スタイル） */}
       <nav style={{
         position: "fixed",
         bottom: 0,
@@ -174,6 +174,7 @@ export default function TabLayout({ isAuthed: _isAuthed, todayPanel, todayPhoneS
         {TABS.map(tab => (
           <button
             key={tab.id}
+            type="button"
             onClick={() => switchTab(tab.id)}
             style={{
               flex: 1,
@@ -184,14 +185,14 @@ export default function TabLayout({ isAuthed: _isAuthed, todayPanel, todayPhoneS
               background: "none",
               border: "none",
               color: activeTab === tab.id ? "var(--indigo)" : "var(--text2)",
-              fontSize: "0.6rem",
+              fontSize: "0.52rem",
               fontFamily: "'Noto Sans JP', sans-serif",
               padding: "4px 0",
               transition: "color 0.15s",
             }}
           >
             <span style={{
-              fontSize: "1.3rem",
+              fontSize: "1.25rem",
               lineHeight: 1,
               filter: activeTab === tab.id ? "none" : "grayscale(30%)",
               transform: activeTab === tab.id ? "scale(1.1)" : "scale(1)",
@@ -202,6 +203,9 @@ export default function TabLayout({ isAuthed: _isAuthed, todayPanel, todayPhoneS
             </span>
             <span style={{
               fontWeight: activeTab === tab.id ? "500" : "300",
+              textAlign: "center",
+              lineHeight: 1.1,
+              padding: "0 2px",
             }}>
               {tab.label}
             </span>

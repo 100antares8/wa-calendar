@@ -1,40 +1,52 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getMoonPhaseEvents } from "@/lib/moon-phases";
 import { getSekkiDatesForYear, getSeason } from "@/lib/japanese-calendar";
+import { getJstYmd } from "@/lib/jst-date";
 
 export async function GET(req: NextRequest) {
-  const year  = parseInt(req.nextUrl.searchParams.get("year")  || String(new Date().getFullYear()));
-  const month = parseInt(req.nextUrl.searchParams.get("month") || String(new Date().getMonth() + 1));
+  const jDefault = getJstYmd(new Date());
+  const year  = parseInt(req.nextUrl.searchParams.get("year")  || String(jDefault.y), 10);
+  const month = parseInt(req.nextUrl.searchParams.get("month") || String(jDefault.m), 10);
 
   const moonEvents = getMoonPhaseEvents(year, month);
-  const sekkiAll   = getSekkiDatesForYear(year);
+  const sekkiAll = getSekkiDatesForYear(year);
   const sekkiThisMonth = sekkiAll.filter(s => {
-    const jst = new Date(s.date.getTime() + 9 * 3600000);
-    return jst.getMonth() + 1 === month;
+    const j = getJstYmd(s.date);
+    return j.y === year && j.m === month;
   });
 
-  // 月の各日情報
-  const daysInMonth = new Date(year, month, 0).getDate();
+  const daysInMonth = new Date(Date.UTC(year, month, 0)).getUTCDate();
   const days = Array.from({ length: daysInMonth }, (_, i) => {
-    const date = new Date(year, month - 1, i + 1);
-    const moonEventsDay = moonEvents.filter(e => e.jst.getDate() === i + 1);
+    const day = i + 1;
+    const anchor = new Date(Date.UTC(year, month - 1, day, 3, 0, 0));
+    const moonEventsDay = moonEvents.filter(e => e.jst.getDate() === day);
     const sekkiDay = sekkiThisMonth.find(s => {
-      const jst = new Date(s.date.getTime() + 9 * 3600000);
-      return jst.getDate() === i + 1;
+      const j = getJstYmd(s.date);
+      return j.d === day;
     });
     return {
-      day: i + 1,
-      weekday: ["日", "月", "火", "水", "木", "金", "土"][date.getDay()],
-      isWeekend: date.getDay() === 0 || date.getDay() === 6,
-      moonEvents: moonEventsDay.map(e => ({ phase: e.phase, emoji: e.emoji,
-        time: `${e.jst.getHours().toString().padStart(2,"0")}:${e.jst.getMinutes().toString().padStart(2,"0")}` })),
+      day,
+      weekday: ["日", "月", "火", "水", "木", "金", "土"][anchor.getUTCDay()],
+      isWeekend: anchor.getUTCDay() === 0 || anchor.getUTCDay() === 6,
+      moonEvents: moonEventsDay.map(e => ({
+        phase: e.phase,
+        emoji: e.emoji,
+        time: `${e.jst.getHours().toString().padStart(2, "0")}:${e.jst.getMinutes().toString().padStart(2, "0")}`,
+      })),
       sekki: sekkiDay ? { name: sekkiDay.sekki.kanji, reading: sekkiDay.sekki.reading } : null,
-      season: getSeason(date).name,
+      season: getSeason(anchor).name,
     };
   });
 
-  return NextResponse.json({ year, month, days, moonEvents: moonEvents.map(e => ({
-    phase: e.phase, emoji: e.emoji, day: e.jst.getDate(),
-    time: `${e.jst.getHours().toString().padStart(2,"0")}:${e.jst.getMinutes().toString().padStart(2,"0")}`,
-  })) });
+  return NextResponse.json({
+    year,
+    month,
+    days,
+    moonEvents: moonEvents.map(e => ({
+      phase: e.phase,
+      emoji: e.emoji,
+      day: e.jst.getDate(),
+      time: `${e.jst.getHours().toString().padStart(2, "0")}:${e.jst.getMinutes().toString().padStart(2, "0")}`,
+    })),
+  });
 }
