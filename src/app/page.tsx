@@ -45,7 +45,7 @@ export default function Home() {
         )}
       </header>
 
-      <main style={{ maxWidth: "1100px", margin: "0 auto", padding: "1rem" }}>
+      <main style={{ maxWidth: "1380px", margin: "0 auto", padding: "1rem" }}>
         <Tabs isAuthed={isAuthed} />
       </main>
     </div>
@@ -56,16 +56,17 @@ function Tabs({ isAuthed }: { isAuthed: boolean }) {
   return (
     <TabLayout
       isAuthed={isAuthed}
-      todayPanel={<TodayPanel compact />}
+      todayPanel={<TodayPanel compact comfortable />}
       todayPhoneStack={
         <div style={{ display: "flex", flexDirection: "column", gap: "0.35rem" }}>
           <TodayPanel compact />
           <TraditionalClock compact />
         </div>
       }
-      ipadTodayClock={<TraditionalClock compact />}
+      ipadTodayClock={<TraditionalClock compact comfortable />}
       clock={<TraditionalClock />}
       calendar={<MonthCalendar />}
+      calendarForTabletToday={<MonthCalendar showDailyAside={false} comfortable />}
       sekkiGuide={<SekkiGuidePanel />}
       seasonalKigo={<SeasonalKigoPanel />}
       sync={<GoogleCalendarSync isAuthed={isAuthed} />}

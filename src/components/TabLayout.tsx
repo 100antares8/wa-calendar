@@ -9,6 +9,8 @@ interface Props {
   ipadTodayClock: ReactNode;
   clock: ReactNode;
   calendar: ReactNode;
+  /** Right column on iPad「今日」; omit duplicate seasonal aside if calendar embeds it */
+  calendarForTabletToday?: ReactNode;
   sekkiGuide: ReactNode;
   seasonalKigo: ReactNode;
   sync: ReactNode;
@@ -30,6 +32,7 @@ export default function TabLayout({
   ipadTodayClock,
   clock,
   calendar,
+  calendarForTabletToday,
   sekkiGuide,
   seasonalKigo,
   sync,
@@ -75,14 +78,14 @@ export default function TabLayout({
         minHeight: "calc(100dvh - 60px)",
       }}>
         <nav style={{
-          width: "80px",
+          width: "100px",
           flexShrink: 0,
           borderRight: "1px solid var(--border)",
           display: "flex",
           flexDirection: "column",
           alignItems: "center",
           paddingTop: "1rem",
-          gap: "0.25rem",
+          gap: "0.35rem",
           position: "sticky",
           top: "60px",
           height: "calc(100dvh - 60px)",
@@ -94,43 +97,50 @@ export default function TabLayout({
               type="button"
               onClick={() => switchTab(tab.id)}
               style={{
-                width: "64px",
-                minHeight: "56px",
+                width: "84px",
+                minHeight: "64px",
                 display: "flex",
                 flexDirection: "column",
                 alignItems: "center",
                 justifyContent: "center",
-                gap: "3px",
+                gap: "4px",
                 background: activeTab === tab.id ? "var(--indigo)" : "transparent",
                 color: activeTab === tab.id ? "#f0e6d3" : "var(--text2)",
                 border: "none",
                 borderRadius: "12px",
-                fontSize: "0.58rem",
+                fontSize: "0.62rem",
                 fontFamily: "'Noto Sans JP', sans-serif",
                 transition: "all 0.15s",
-                padding: "6px 4px",
+                padding: "8px 5px",
               }}
             >
-              <span style={{ fontSize: "1.35rem", lineHeight: 1 }}>{tab.emoji}</span>
-              <span style={{ textAlign: "center", lineHeight: 1.15 }}>{tab.label}</span>
+              <span style={{ fontSize: "1.5rem", lineHeight: 1 }}>{tab.emoji}</span>
+              <span style={{ textAlign: "center", lineHeight: 1.2 }}>{tab.label}</span>
             </button>
           ))}
         </nav>
 
-        <div style={{ flex: 1, padding: "1.25rem", overflowY: "auto" }} key={activeTab} className="fade-in">
+        <div style={{ flex: 1, padding: "1.25rem", overflowY: "auto", minWidth: 0 }} key={activeTab} className="fade-in">
           {activeTab === "today" ? (
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1.25rem", maxWidth: "1000px" }}>
-              <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+            <div style={{
+              display: "grid",
+              gridTemplateColumns: "minmax(0, 1fr) minmax(0, 1fr)",
+              gap: "1.35rem",
+              width: "100%",
+              maxWidth: "min(1280px, 100%)",
+              margin: "0 auto",
+            }}>
+              <div style={{ display: "flex", flexDirection: "column", gap: "1rem", minWidth: 0 }}>
                 {todayPanel}
                 {sync}
               </div>
-              <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+              <div style={{ display: "flex", flexDirection: "column", gap: "1rem", minWidth: 0 }}>
                 <div style={{ display: "flex", justifyContent: "center" }}>{ipadTodayClock}</div>
-                {calendar}
+                {calendarForTabletToday ?? calendar}
               </div>
             </div>
           ) : (
-            <div style={{ maxWidth: "900px" }}>
+            <div style={{ maxWidth: "960px" }}>
               {content[activeTab]}
             </div>
           )}

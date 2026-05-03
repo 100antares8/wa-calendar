@@ -7,7 +7,7 @@
     "free-port": "node scripts/free-port.js 3333",
     "dev": "next dev --port 3333",
     "dev:clean": "npm run free-port && npm run clean && next dev --port 3333",
-    "build": "next build",
+    "icons": "node scripts/generate-icons.mjs",
     "start": "next start --port 3333"
   },
   "dependencies": {

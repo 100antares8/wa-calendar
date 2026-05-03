@@ -23,7 +23,10 @@ const SEASON_COLORS: Record<string, string> = {
   "春": "#fce7f3", "夏": "#d1fae5", "秋": "#fef3c7", "冬": "#dbeafe",
 };
 
-export default function MonthCalendar() {
+export default function MonthCalendar({
+  showDailyAside = true,
+  comfortable = false,
+}: { showDailyAside?: boolean; comfortable?: boolean } = {}) {
   const j0 = getJstYmd(new Date());
   const [year,  setYear]  = useState(j0.y);
   const [month, setMonth] = useState(j0.m);
@@ -78,30 +81,42 @@ export default function MonthCalendar() {
   const WEEKDAYS = ["月", "火", "水", "木", "金", "土", "日"];
 
   const jstToday = getJstYmd(new Date());
+  const cellMinH = comfortable ? 62 : 52;
+  const gridGap = comfortable ? 4 : 2;
+  const titleFs = comfortable ? "1.45rem" : "1.3rem";
+  const subtitleFs = comfortable ? "0.76rem" : "0.7rem";
+  const weekHdrFs = comfortable ? "0.78rem" : "0.7rem";
+  const dayNumFs = comfortable ? "0.95rem" : "0.85rem";
+  const sekkiFs = comfortable ? "0.62rem" : "0.55rem";
+  const moonEmojiFs = comfortable ? "1rem" : "0.9rem";
+  const legendFs = comfortable ? "0.76rem" : "0.7rem";
+  const hintFs = comfortable ? "0.72rem" : "0.65rem";
+  const navBtnPad = comfortable ? "0.35rem 0.85rem" : "0.25rem 0.75rem";
+  const navBtnFs = comfortable ? "1.05rem" : "1rem";
 
   const gridCard = (
     <div
       className="wa-card fade-in"
       onTouchStart={onTouchStart}
       onTouchEnd={onTouchEnd}
-      style={{ touchAction: "pan-y", flex: wide ? "1 1 360px" : undefined, minWidth: 0 }}
+      style={{ touchAction: "pan-y", flex: wide ? (comfortable ? "1 1 420px" : "1 1 360px") : undefined, minWidth: 0 }}
     >
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "1rem" }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: comfortable ? "1.1rem" : "1rem" }}>
         <button type="button" onClick={prevMonth} style={{
           background: "none", border: "1px solid var(--border)",
-          borderRadius: "4px", padding: "0.25rem 0.75rem",
-          cursor: "pointer", color: "var(--text2)", fontSize: "1rem",
+          borderRadius: "4px", padding: navBtnPad,
+          cursor: "pointer", color: "var(--text2)", fontSize: navBtnFs,
         }}>‹</button>
         <div style={{ textAlign: "center" }}>
-          <div style={{ fontSize: "1.3rem", fontWeight: "500" }}>{year}年{month}月</div>
-          <div style={{ fontSize: "0.7rem", color: "var(--text2)", letterSpacing: "0.1em" }}>
+          <div style={{ fontSize: titleFs, fontWeight: "500" }}>{year}年{month}月</div>
+          <div style={{ fontSize: subtitleFs, color: "var(--text2)", letterSpacing: "0.1em" }}>
             {["一月","二月","三月","四月","五月","六月","七月","八月","九月","十月","十一月","十二月"][month-1]}
           </div>
         </div>
         <button type="button" onClick={nextMonth} style={{
           background: "none", border: "1px solid var(--border)",
-          borderRadius: "4px", padding: "0.25rem 0.75rem",
-          cursor: "pointer", color: "var(--text2)", fontSize: "1rem",
+          borderRadius: "4px", padding: navBtnPad,
+          cursor: "pointer", color: "var(--text2)", fontSize: navBtnFs,
         }}>›</button>
       </div>
 
@@ -109,17 +124,17 @@ export default function MonthCalendar() {
 
       {data && !loading && (
         <>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: "2px", marginBottom: "4px" }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: gridGap, marginBottom: "4px" }}>
             {WEEKDAYS.map((w, i) => (
               <div key={w} style={{
-                textAlign: "center", fontSize: "0.7rem", padding: "4px 0",
+                textAlign: "center", fontSize: weekHdrFs, padding: comfortable ? "6px 0" : "4px 0",
                 color: i === 5 ? "#1e3a5f" : i === 6 ? "#c0392b" : "var(--text2)",
                 fontFamily: "var(--font-sans, sans-serif)",
               }}>{w}</div>
             ))}
           </div>
 
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: "2px" }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: gridGap }}>
             {Array.from({ length: leadingBlanks }, (_, i) => (
               <div key={`empty-${i}`} />
             ))}
@@ -133,14 +148,14 @@ export default function MonthCalendar() {
 
               return (
                 <div key={d.day} style={{
-                  minHeight: "52px", padding: "3px",
+                  minHeight: `${cellMinH}px`, padding: comfortable ? "5px" : "3px",
                   background: isToday ? "var(--indigo)" : seasonBg,
                   borderRadius: "4px",
                   border: isToday ? "none" : "1px solid rgba(0,0,0,0.05)",
                   position: "relative",
                 }}>
                   <div style={{
-                    fontSize: "0.85rem", fontWeight: isToday ? "700" : "400",
+                    fontSize: dayNumFs, fontWeight: isToday ? "700" : "400",
                     color: isToday ? "#f0e6d3" : isSun ? "#c0392b" : isSat ? "#1e3a5f" : "var(--text)",
                     textAlign: "center", lineHeight: 1.4,
                   }}>
@@ -149,11 +164,11 @@ export default function MonthCalendar() {
 
                   {d.sekki && (
                     <div style={{
-                      fontSize: "0.55rem",
+                      fontSize: sekkiFs,
                       background: "#1e3a5f",
                       color: "#f0e6d3",
                       borderRadius: "2px",
-                      padding: "1px 3px",
+                      padding: comfortable ? "2px 4px" : "1px 3px",
                       textAlign: "center",
                       marginTop: "1px",
                       lineHeight: 1.3,
@@ -164,7 +179,7 @@ export default function MonthCalendar() {
 
                   {d.moonEvents.map((me, i) => (
                     <div key={i} title={`${me.phase} ${me.time}`} style={{
-                      fontSize: "0.9rem",
+                      fontSize: moonEmojiFs,
                       textAlign: "center",
                       lineHeight: 1,
                       marginTop: "1px",
@@ -178,7 +193,7 @@ export default function MonthCalendar() {
           </div>
 
           <div style={{ marginTop: "1rem" }}>
-            <div style={{ display: "flex", flexWrap: "wrap", gap: "0.75rem", fontSize: "0.7rem", color: "var(--text2)" }}>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: "0.75rem", fontSize: legendFs, color: "var(--text2)" }}>
               {[
                 { emoji: "🌑", label: "新月" }, { emoji: "🌓", label: "上弦" },
                 { emoji: "🌕", label: "満月" }, { emoji: "🌗", label: "下弦" },
@@ -190,7 +205,7 @@ export default function MonthCalendar() {
                 節気
               </span>
             </div>
-            <div style={{ fontSize: "0.65rem", color: "var(--text2)", marginTop: "0.5rem" }}>
+            <div style={{ fontSize: hintFs, color: "var(--text2)", marginTop: "0.5rem" }}>
               カレンダー上を左右にスワイプすると前月・翌月に移動します（矢印ボタンでも操作可）。
             </div>
           </div>
@@ -199,21 +214,25 @@ export default function MonthCalendar() {
     </div>
   );
 
-  if (wide) {
+  if (wide && showDailyAside) {
     return (
-      <div style={{ display: "flex", gap: "1rem", alignItems: "flex-start", maxWidth: "980px" }}>
+      <div style={{ display: "flex", gap: "1rem", alignItems: "flex-start", maxWidth: comfortable ? "1120px" : "980px" }}>
         {gridCard}
-        <div style={{ flex: "0 0 280px", position: "sticky", top: "1rem" }} className="fade-in">
+        <div style={{ flex: comfortable ? "0 0 300px" : "0 0 280px", position: "sticky", top: "1rem" }} className="fade-in">
           <DailySeasonalAside />
         </div>
       </div>
     );
   }
 
+  if (wide) {
+    return gridCard;
+  }
+
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
       {gridCard}
-      <DailySeasonalAside />
+      {showDailyAside && <DailySeasonalAside />}
     </div>
   );
 }

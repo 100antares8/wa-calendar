@@ -68,7 +68,7 @@ function useTodayData() {
   return { data, error };
 }
 
-function TodayFeatured({ jst }: { jst: { y: number; m: number; d: number } }) {
+function TodayFeatured({ jst, comfortable = false }: { jst: { y: number; m: number; d: number }; comfortable?: boolean }) {
   const bundle = useMemo(() => getDailySeasonalBundle(jst), [jst.y, jst.m, jst.d]);
   const f = bundle.featured;
   const kindLabel =
@@ -77,25 +77,31 @@ function TodayFeatured({ jst }: { jst: { y: number; m: number; d: number } }) {
     : bundle.featuredKind === "tea" ? "茶の言葉"
     : "自然の一句";
 
+  const pad = comfortable ? "0.75rem 1rem" : "0.55rem 0.75rem";
+  const fsLabel = comfortable ? "0.75rem" : "0.62rem";
+  const fsMain = comfortable ? "1.05rem" : "0.88rem";
+  const fsSub = comfortable ? "0.82rem" : "0.72rem";
+  const borderW = comfortable ? 5 : 4;
+
   return (
     <div className="wa-card fade-in" style={{
-      padding: "0.55rem 0.75rem",
-      borderLeft: "4px solid var(--indigo)",
+      padding: pad,
+      borderLeft: `${borderW}px solid var(--indigo)`,
       background: "rgba(30,58,95,0.05)",
     }}>
-      <div style={{ fontSize: "0.62rem", color: "var(--text2)", letterSpacing: "0.1em", marginBottom: "0.25rem" }}>
+      <div style={{ fontSize: fsLabel, color: "var(--text2)", letterSpacing: "0.1em", marginBottom: comfortable ? "0.35rem" : "0.25rem" }}>
         今日の季語 · {kindLabel}
       </div>
-      <p style={{ fontSize: "0.88rem", fontWeight: 600, lineHeight: 1.45, margin: "0 0 0.3rem" }}>{f.text}</p>
+      <p style={{ fontSize: fsMain, fontWeight: 600, lineHeight: 1.45, margin: "0 0 0.3rem" }}>{f.text}</p>
       {f.attribution && (
-        <div style={{ fontSize: "0.72rem", color: "var(--text2)", marginBottom: "0.3rem" }}>— {f.attribution}</div>
+        <div style={{ fontSize: fsSub, color: "var(--text2)", marginBottom: "0.3rem" }}>— {f.attribution}</div>
       )}
-      <p style={{ fontSize: "0.72rem", color: "var(--text2)", lineHeight: 1.5, margin: 0 }}>{f.note}</p>
+      <p style={{ fontSize: fsSub, color: "var(--text2)", lineHeight: 1.55, margin: 0 }}>{f.note}</p>
     </div>
   );
 }
 
-export default function TodayPanel({ compact = false }: { compact?: boolean }) {
+export default function TodayPanel({ compact = false, comfortable = false }: { compact?: boolean; comfortable?: boolean }) {
   const { data, error } = useTodayData();
 
   if (error) return <div style={{ color: "red" }}>{error}</div>;
@@ -110,82 +116,86 @@ export default function TodayPanel({ compact = false }: { compact?: boolean }) {
   const heading = `${jst.y}年${jst.m}月${jst.d}日`;
 
   if (compact) {
+    const g = comfortable ? "0.5rem" : "0.35rem";
+    const cardPad = comfortable ? "0.65rem 0.85rem" : "0.5rem 0.65rem";
+    const moonSize = comfortable ? 56 : 46;
+
     return (
-      <div style={{ display: "flex", flexDirection: "column", gap: "0.35rem" }}>
-        <TodayFeatured jst={jst} />
+      <div style={{ display: "flex", flexDirection: "column", gap: g }}>
+        <TodayFeatured jst={jst} comfortable={comfortable} />
 
         {data.todaySekki && (
           <div style={{
             background: "var(--indigo)",
             color: "#f0e6d3",
             borderRadius: "5px",
-            padding: "0.35rem 0.5rem",
+            padding: comfortable ? "0.5rem 0.65rem" : "0.35rem 0.5rem",
             textAlign: "center",
           }} className="fade-in">
-            <div style={{ fontSize: "0.55rem", letterSpacing: "0.12em", opacity: 0.85 }}>本日·二十四節気</div>
-            <div style={{ fontSize: "1.15rem", fontWeight: 700, letterSpacing: "0.08em", lineHeight: 1.2 }}>
+            <div style={{ fontSize: comfortable ? "0.65rem" : "0.55rem", letterSpacing: "0.12em", opacity: 0.85 }}>本日·二十四節気</div>
+            <div style={{ fontSize: comfortable ? "1.35rem" : "1.15rem", fontWeight: 700, letterSpacing: "0.08em", lineHeight: 1.2 }}>
               {data.todaySekki.kanji}
             </div>
-            <div style={{ fontSize: "0.65rem", opacity: 0.9 }}>{data.todaySekki.reading}</div>
+            <div style={{ fontSize: comfortable ? "0.75rem" : "0.65rem", opacity: 0.9 }}>{data.todaySekki.reading}</div>
           </div>
         )}
 
-        <div className="wa-card fade-in" style={{ padding: "0.5rem 0.65rem" }}>
+        <div className="wa-card fade-in" style={{ padding: cardPad }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "0.35rem", flexWrap: "wrap" }}>
-            <div style={{ fontSize: "0.88rem", fontWeight: 600, lineHeight: 1.3 }}>
+            <div style={{ fontSize: comfortable ? "1.02rem" : "0.88rem", fontWeight: 600, lineHeight: 1.3 }}>
               {heading}
-              <span style={{ fontSize: "0.68rem", color: "var(--text2)", fontWeight: 400, marginLeft: "0.35rem" }}>
+              <span style={{ fontSize: comfortable ? "0.78rem" : "0.68rem", color: "var(--text2)", fontWeight: 400, marginLeft: "0.35rem" }}>
                 {jst.weekdayShort}
               </span>
             </div>
             <div style={{
               background: data.season.color,
               borderRadius: "4px",
-              padding: "0.15rem 0.45rem",
-              fontSize: "0.78rem",
+              padding: comfortable ? "0.22rem 0.55rem" : "0.15rem 0.45rem",
+              fontSize: comfortable ? "0.88rem" : "0.78rem",
             }}>
               {data.season.emoji}{data.season.name}
             </div>
           </div>
-          <div style={{ fontSize: "0.62rem", color: "var(--text2)", marginTop: "0.25rem" }}>
+          <div style={{ fontSize: comfortable ? "0.72rem" : "0.62rem", color: "var(--text2)", marginTop: "0.25rem" }}>
             グレゴリオ日付は日本標準時（JST）基準です。
           </div>
-          <div className="wa-divider" style={{ margin: "0.35rem 0" }} />
-          <div style={{ fontSize: "0.72rem", color: "var(--text2)", marginBottom: "0.2rem" }}>旧暦</div>
-          <div style={{ fontSize: "0.78rem", lineHeight: 1.35 }}>
+          <div className="wa-divider" style={{ margin: comfortable ? "0.45rem 0" : "0.35rem 0" }} />
+          <div style={{ fontSize: comfortable ? "0.8rem" : "0.72rem", color: "var(--text2)", marginBottom: "0.2rem" }}>旧暦</div>
+          <div style={{ fontSize: comfortable ? "0.9rem" : "0.78rem", lineHeight: 1.35 }}>
             {data.lunar.lunarYear}年 {data.lunar.monthName}
-            <span style={{ color: "var(--text2)", fontSize: "0.68rem" }}>（{data.lunar.monthReading}）</span>
+            <span style={{ color: "var(--text2)", fontSize: comfortable ? "0.76rem" : "0.68rem" }}>（{data.lunar.monthReading}）</span>
             {" "}{lunarDayName}
-            <span style={{ color: "var(--text2)", fontSize: "0.68rem" }}>（{data.lunar.lunarDay}日）</span>
+            <span style={{ color: "var(--text2)", fontSize: comfortable ? "0.76rem" : "0.68rem" }}>（{data.lunar.lunarDay}日）</span>
           </div>
-          <div className="wa-divider" style={{ margin: "0.35rem 0" }} />
-          <div style={{ display: "flex", flexWrap: "wrap", gap: "0.5rem 0.75rem", alignItems: "baseline", fontSize: "0.78rem" }}>
+          <div className="wa-divider" style={{ margin: comfortable ? "0.45rem 0" : "0.35rem 0" }} />
+          <div style={{ display: "flex", flexWrap: "wrap", gap: "0.5rem 0.75rem", alignItems: "baseline", fontSize: comfortable ? "0.9rem" : "0.78rem" }}>
             <span>
-              <span style={{ color: "var(--text2)", fontSize: "0.65rem" }}>年干支</span>{" "}
+              <span style={{ color: "var(--text2)", fontSize: comfortable ? "0.72rem" : "0.65rem" }}>年干支</span>{" "}
               <strong>{data.yearEto.eto}</strong>
-              <span style={{ color: "var(--text2)", fontSize: "0.65rem", marginLeft: "0.2rem" }}>{data.yearEto.reading}</span>
+              <span style={{ color: "var(--text2)", fontSize: comfortable ? "0.72rem" : "0.65rem", marginLeft: "0.2rem" }}>{data.yearEto.reading}</span>
             </span>
             <span>
-              <span style={{ color: "var(--text2)", fontSize: "0.65rem" }}>六曜</span>{" "}
+              <span style={{ color: "var(--text2)", fontSize: comfortable ? "0.72rem" : "0.65rem" }}>六曜</span>{" "}
               <strong style={{ color: data.rokuyo.color }}>{data.rokuyo.name}</strong>
             </span>
           </div>
         </div>
 
-        <div className="wa-card fade-in" style={{ display: "flex", alignItems: "center", gap: "0.5rem", padding: "0.45rem 0.65rem" }}>
-          <MoonSvg age={data.moonAge} size={46} />
+        <div className="wa-card fade-in" style={{ display: "flex", alignItems: "center", gap: comfortable ? "0.65rem" : "0.5rem", padding: cardPad }}>
+          <MoonSvg age={data.moonAge} size={moonSize} />
           <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontSize: "0.65rem", color: "var(--text2)" }}>月相</div>
-            <div style={{ fontSize: "0.88rem", fontWeight: 600, lineHeight: 1.25 }}>
+            <div style={{ fontSize: comfortable ? "0.72rem" : "0.65rem", color: "var(--text2)" }}>月相</div>
+            <div style={{ fontSize: comfortable ? "0.98rem" : "0.88rem", fontWeight: 600, lineHeight: 1.25 }}>
               {data.moonPhase.emoji} {data.moonPhase.name}
-              <span style={{ fontSize: "0.68rem", color: "var(--text2)", fontWeight: 400, marginLeft: "0.35rem" }}>
+              <span style={{ fontSize: comfortable ? "0.76rem" : "0.68rem", color: "var(--text2)", fontWeight: 400, marginLeft: "0.35rem" }}>
                 月齢{data.moonAge.toFixed(1)}
               </span>
             </div>
           </div>
         </div>
 
-        <div className="wa-card fade-in" style={{ padding: "0.4rem 0.65rem", fontSize: "0.72rem" }}>
+        <div className="wa-card fade-in" style={{ padding: cardPad, fontSize: comfortable ? "0.82rem" : "0.72rem" }}>
           <span style={{ color: "var(--text2)" }}>現在の節気</span>{" "}
           <strong>{data.currentSekki.kanji}</strong>
           <span style={{ color: "var(--text2)", marginLeft: "0.35rem" }}>
