@@ -1,7 +1,10 @@
 // ============================================================
 // 日本の伝統的な時刻体系
 // 不定時法（江戸時代）・定時法・十二支時・刻・更
+// ※ 表示はすべて日本標準時（JST）の時刻に基づく
 // ============================================================
+
+import { getJstYmd, getJstClock, getJstDecimalHour, jstNoonUtc } from "@/lib/jst-date";
 
 // ---- 十二支の刻（定時法・明治以降基準） ----------------------------------------
 export interface JunishiTime {
@@ -30,16 +33,16 @@ export const JUNISHI_TIMES: JunishiTime[] = [
 ];
 
 export function getCurrentJunishiTime(date: Date): JunishiTime & { koku: number; subKoku: string } {
-  const h = date.getHours();
+  const { hour: h, minute } = getJstClock(date);
+  const min = minute;
   for (const jt of JUNISHI_TIMES) {
     const inRange = jt.start === 23
       ? h >= 23 || h < 1
       : h >= jt.start && h < jt.end;
     if (inRange) {
-      // 刻の中での位置（一刻=120分→四半刻=30分）
       const minFromStart = jt.start === 23
-        ? h >= 23 ? (h - 23) * 60 + date.getMinutes() : (h + 1) * 60 + date.getMinutes()
-        : (h - jt.start) * 60 + date.getMinutes();
+        ? h >= 23 ? (h - 23) * 60 + min : (h + 1) * 60 + min
+        : (h - jt.start) * 60 + min;
       const koku = Math.floor(minFromStart / 30) + 1;
       const subKokuNames = ["", "一ノ刻", "二ノ刻", "三ノ刻", "四ノ刻"];
       return { ...jt, koku, subKoku: subKokuNames[Math.min(koku, 4)] };
@@ -49,7 +52,6 @@ export function getCurrentJunishiTime(date: Date): JunishiTime & { koku: number;
 }
 
 // ---- 不定時法（江戸時代の時刻体系） ----------------------------------------
-// 日の出・日の入りを基準に昼夜を6等分
 export interface FuteijiTime {
   name: string;
   reading: string;
@@ -76,9 +78,11 @@ export const FUTEIJI_NIGHT: FuteijiTime[] = [
   { name: "暁七つ", reading: "あかつきなな",junishi: "寅", bellCount: 7, isDay: false },
 ];
 
-// 東京の緯度・経度で日の出・日の入りを近似計算
-function getSunriseSunset(date: Date, lat = 35.6762, lon = 139.6503): { sunrise: number; sunset: number } {
-  const dayOfYear = Math.floor((date.getTime() - new Date(date.getFullYear(), 0, 0).getTime()) / 86400000);
+// 東京の緯度・経度で日の出・日の入りを近似計算（JST 当日の暦日で dayOfYear を求める）
+function getSunriseSunset(jst: { y: number; m: number; d: number }, lat = 35.6762, lon = 139.6503): { sunrise: number; sunset: number } {
+  const noon = jstNoonUtc(jst);
+  const jan1 = jstNoonUtc({ y: jst.y, m: 1, d: 1 });
+  const dayOfYear = Math.round((noon.getTime() - jan1.getTime()) / 86400000) + 1;
   const B = (360 / 365) * (dayOfYear - 81) * (Math.PI / 180);
   const EqT = 9.87 * Math.sin(2 * B) - 7.53 * Math.cos(B) - 1.5 * Math.sin(B);
   const decl = 23.45 * Math.sin(B) * (Math.PI / 180);
@@ -91,8 +95,9 @@ function getSunriseSunset(date: Date, lat = 35.6762, lon = 139.6503): { sunrise:
 }
 
 export function getFuteijiTime(date: Date): { current: FuteijiTime; progress: number; nextChange: string } {
-  const { sunrise, sunset } = getSunriseSunset(date);
-  const h = date.getHours() + date.getMinutes() / 60;
+  const jst = getJstYmd(date);
+  const { sunrise, sunset } = getSunriseSunset(jst);
+  const h = getJstDecimalHour(date);
   const dayLen = sunset - sunrise;
   const nightLen = 24 - dayLen;
   const dayUnit = dayLen / 6;
@@ -116,11 +121,17 @@ export function getFuteijiTime(date: Date): { current: FuteijiTime; progress: nu
 }
 
 // ---- 更（こう）・点（てん） ----------------------------------------
-// 夜を5更に分け、各更を5点に分ける
 export function getKoTen(date: Date): { ko: number; ten: number; name: string } {
-  const { sunset } = getSunriseSunset(date);
-  const { sunrise: nextSunrise } = getSunriseSunset(new Date(date.getTime() + 86400000));
-  const h = date.getHours() + date.getMinutes() / 60;
+  const jst = getJstYmd(date);
+  const { sunset } = getSunriseSunset(jst);
+  const nextJst = { ...jst };
+  const n = new Date(jstNoonUtc(jst).getTime() + 86400000);
+  const jn = getJstYmd(n);
+  nextJst.y = jn.y;
+  nextJst.m = jn.m;
+  nextJst.d = jn.d;
+  const { sunrise: nextSunrise } = getSunriseSunset(nextJst);
+  const h = getJstDecimalHour(date);
   const nightLen = (24 - sunset) + nextSunrise;
 
   let nightH: number;
@@ -163,6 +174,6 @@ export const TIME_OF_DAY_NAMES: { from: number; to: number; name: string; readin
 ];
 
 export function getTimeOfDay(date: Date): typeof TIME_OF_DAY_NAMES[0] {
-  const h = date.getHours();
+  const h = getJstClock(date).hour;
   return TIME_OF_DAY_NAMES.find(t => h >= t.from && h < t.to) || TIME_OF_DAY_NAMES[0];
 }

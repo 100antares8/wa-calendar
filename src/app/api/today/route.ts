@@ -11,6 +11,8 @@ import { getMoonAge, getMoonPhaseLabel } from "@/lib/moon-phases";
 import { getCurrentJunishiTime, getFuteijiTime, getKoTen, getTimeOfDay } from "@/lib/traditional-time";
 import { getJstYmd, jstNoonUtc, getJstWeekdayLabel, getJstWeekdayLabelLong } from "@/lib/jst-date";
 
+export const dynamic = "force-dynamic";
+
 export async function GET() {
   const now = new Date();
   const jst = getJstYmd(now);

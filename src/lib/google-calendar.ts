@@ -126,7 +126,7 @@ export async function deleteWaCalendarEventsForKinds(
       const parts = wa.split("|");
       if (parts.length < 3) continue;
       const y = parseInt(parts[0], 10);
-      const kind = parts[1];
+      const kind = parts.length >= 4 ? parts[2] : parts[1];
       if (y !== year) continue;
       if (kind === "sekki" && kinds.has("sekki")) toDelete.push(ev.id);
       else if (kind === "moon" && kinds.has("moon")) toDelete.push(ev.id);

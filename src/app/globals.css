@@ -161,3 +161,12 @@ input[type="checkbox"] {
 @media (min-width: 768px) and (max-width: 1024px) {
   html { font-size: 16px; }
 }
+
+.wa-app-header {
+  padding-top: calc(0.35rem + var(--safe-top)) !important;
+}
+
+@media (max-width: 520px) {
+  .wa-header-sub { display: none; }
+  .wa-google-status { display: none; }
+}

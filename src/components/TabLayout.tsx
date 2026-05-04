@@ -3,39 +3,33 @@
 import { useState, useEffect, ReactNode, type CSSProperties } from "react";
 
 interface Props {
-  isAuthed: boolean;
   todayPanel: ReactNode;
   todayPhoneStack: ReactNode;
   ipadTodayClock: ReactNode;
   clock: ReactNode;
   calendar: ReactNode;
-  /** Right column on iPad「今日」; omit duplicate seasonal aside if calendar embeds it */
   calendarForTabletToday?: ReactNode;
-  sekkiGuide: ReactNode;
+  guideSync: ReactNode;
   seasonalKigo: ReactNode;
-  sync: ReactNode;
 }
 
 const TABS = [
-  { id: "today",    label: "今日",    emoji: "☀️" },
-  { id: "clock",    label: "時刻",    emoji: "⏰" },
-  { id: "calendar", label: "暦",      emoji: "🗓" },
-  { id: "sekki",    label: "節気・解説", emoji: "🌿" },
-  { id: "kigo",     label: "季語",    emoji: "🎋" },
-  { id: "sync",     label: "同期",    emoji: "📅" },
+  { id: "today",       label: "今日",       emoji: "☀️" },
+  { id: "clock",       label: "時刻",       emoji: "⏰" },
+  { id: "calendar",    label: "暦",         emoji: "🗓" },
+  { id: "kigo",        label: "季語",       emoji: "🎋" },
+  { id: "guide-sync",  label: "節気・同期", emoji: "🌿" },
 ];
 
 export default function TabLayout({
-  isAuthed: _isAuthed,
   todayPanel,
   todayPhoneStack,
   ipadTodayClock,
   clock,
   calendar,
   calendarForTabletToday,
-  sekkiGuide,
+  guideSync,
   seasonalKigo,
-  sync,
 }: Props) {
   const [activeTab, setActiveTab] = useState("today");
   const [isIpad, setIsIpad]       = useState(false);
@@ -43,7 +37,8 @@ export default function TabLayout({
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     let tab = params.get("tab");
-    if (tab === "guide") tab = "sekki";
+    if (tab === "guide") tab = "guide-sync";
+    if (tab === "sekki" || tab === "sync") tab = "guide-sync";
     if (tab && TABS.some(t => t.id === tab)) setActiveTab(tab);
 
     const mq = window.matchMedia("(min-width: 768px)");
@@ -65,9 +60,8 @@ export default function TabLayout({
     today: todayPhoneStack,
     clock,
     calendar,
-    sekki: sekkiGuide,
     kigo: seasonalKigo,
-    sync,
+    "guide-sync": guideSync,
   };
 
   if (isIpad) {
@@ -75,7 +69,7 @@ export default function TabLayout({
       <div style={{
         display: "flex",
         gap: "0",
-        minHeight: "calc(100dvh - 60px)",
+        minHeight: "calc(100dvh - 48px)",
       }}>
         <nav style={{
           width: "100px",
@@ -84,11 +78,11 @@ export default function TabLayout({
           display: "flex",
           flexDirection: "column",
           alignItems: "center",
-          paddingTop: "1rem",
+          paddingTop: "0.65rem",
           gap: "0.35rem",
           position: "sticky",
-          top: "60px",
-          height: "calc(100dvh - 60px)",
+          top: "48px",
+          height: "calc(100dvh - 48px)",
           overflowY: "auto",
         }}>
           {TABS.map(tab => (
@@ -108,7 +102,7 @@ export default function TabLayout({
                 color: activeTab === tab.id ? "#f0e6d3" : "var(--text2)",
                 border: "none",
                 borderRadius: "12px",
-                fontSize: "0.62rem",
+                fontSize: "0.58rem",
                 fontFamily: "'Noto Sans JP', sans-serif",
                 transition: "all 0.15s",
                 padding: "8px 5px",
@@ -120,22 +114,21 @@ export default function TabLayout({
           ))}
         </nav>
 
-        <div style={{ flex: 1, padding: "1.25rem", overflowY: "auto", minWidth: 0 }} key={activeTab} className="fade-in">
+        <div style={{ flex: 1, padding: "0.85rem 1rem", overflowY: "auto", minWidth: 0 }} key={activeTab} className="fade-in">
           {activeTab === "today" ? (
             <div style={{
               display: "grid",
               gridTemplateColumns: "minmax(0, 1fr) minmax(0, 1fr)",
-              gap: "1.35rem",
+              gap: "1.1rem",
               width: "100%",
               maxWidth: "min(1280px, 100%)",
               margin: "0 auto",
             }}>
-              <div style={{ display: "flex", flexDirection: "column", gap: "1rem", minWidth: 0 }}>
+              <div style={{ display: "flex", flexDirection: "column", gap: "0.85rem", minWidth: 0 }}>
                 {todayPanel}
-                {sync}
               </div>
-              <div style={{ display: "flex", flexDirection: "column", gap: "1rem", minWidth: 0 }}>
-                <div style={{ display: "flex", justifyContent: "center" }}>{ipadTodayClock}</div>
+              <div style={{ display: "flex", flexDirection: "column", gap: "0.85rem", minWidth: 0 }}>
+                <div style={{ display: "flex", justifyContent: "stretch", width: "100%" }}>{ipadTodayClock}</div>
                 {calendarForTabletToday ?? calendar}
               </div>
             </div>
@@ -150,14 +143,14 @@ export default function TabLayout({
   }
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", minHeight: "calc(100dvh - 60px)" }}>
+    <div style={{ display: "flex", flexDirection: "column", minHeight: "calc(100dvh - 48px)" }}>
       <div
         key={activeTab}
         className="fade-in"
         style={{
           flex: 1,
-          padding: "0.9rem",
-          paddingBottom: "calc(72px + env(safe-area-inset-bottom))",
+          padding: "0.55rem 0.65rem",
+          paddingBottom: "calc(68px + env(safe-area-inset-bottom))",
           overflowY: "auto",
           WebkitOverflowScrolling: "touch" as never,
         } as CSSProperties}
@@ -170,7 +163,7 @@ export default function TabLayout({
         bottom: 0,
         left: 0,
         right: 0,
-        height: "calc(56px + env(safe-area-inset-bottom))",
+        height: "calc(52px + env(safe-area-inset-bottom))",
         paddingBottom: "env(safe-area-inset-bottom)",
         background: "rgba(253, 246, 227, 0.92)",
         backdropFilter: "blur(20px)",
@@ -178,7 +171,7 @@ export default function TabLayout({
         borderTop: "1px solid var(--border)",
         display: "flex",
         alignItems: "flex-start",
-        paddingTop: "6px",
+        paddingTop: "5px",
         zIndex: 100,
       }}>
         {TABS.map(tab => (
@@ -191,21 +184,21 @@ export default function TabLayout({
               display: "flex",
               flexDirection: "column",
               alignItems: "center",
-              gap: "2px",
+              gap: "1px",
               background: "none",
               border: "none",
               color: activeTab === tab.id ? "var(--indigo)" : "var(--text2)",
-              fontSize: "0.52rem",
+              fontSize: "0.48rem",
               fontFamily: "'Noto Sans JP', sans-serif",
-              padding: "4px 0",
+              padding: "3px 0",
               transition: "color 0.15s",
             }}
           >
             <span style={{
-              fontSize: "1.25rem",
+              fontSize: "1.15rem",
               lineHeight: 1,
               filter: activeTab === tab.id ? "none" : "grayscale(30%)",
-              transform: activeTab === tab.id ? "scale(1.1)" : "scale(1)",
+              transform: activeTab === tab.id ? "scale(1.08)" : "scale(1)",
               transition: "transform 0.15s",
               display: "block",
             }}>
@@ -214,8 +207,8 @@ export default function TabLayout({
             <span style={{
               fontWeight: activeTab === tab.id ? "500" : "300",
               textAlign: "center",
-              lineHeight: 1.1,
-              padding: "0 2px",
+              lineHeight: 1.05,
+              padding: "0 1px",
             }}>
               {tab.label}
             </span>

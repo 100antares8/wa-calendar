@@ -43,7 +43,7 @@ function useTodayData() {
   const [tick, setTick] = useState(0);
 
   const load = () => {
-    fetch("/api/today")
+    fetch("/api/today", { cache: "no-store" })
       .then(r => r.json())
       .then(setData)
       .catch(() => setError("読み込みエラー"));
@@ -59,9 +59,12 @@ function useTodayData() {
       if (document.visibilityState === "visible") setTick(t => t + 1);
     };
     document.addEventListener("visibilitychange", onVis);
+    const onFocus = () => setTick(t => t + 1);
+    window.addEventListener("focus", onFocus);
     return () => {
       clearInterval(id);
       document.removeEventListener("visibilitychange", onVis);
+      window.removeEventListener("focus", onFocus);
     };
   }, []);
 

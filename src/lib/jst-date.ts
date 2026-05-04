@@ -1,5 +1,31 @@
 /** サーバー（UTC）でも日本の「暦上の今日」を一貫して扱う */
 
+/** その瞬間の「日本の時刻」（壁時計）— 十二支時・不定時の基準に使う */
+export function getJstClock(d: Date): { hour: number; minute: number; second: number } {
+  const fmt = new Intl.DateTimeFormat("en-GB", {
+    timeZone: "Asia/Tokyo",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: false,
+  });
+  const parts = fmt.formatToParts(d);
+  const map: Record<string, string> = {};
+  for (const p of parts) {
+    if (p.type !== "literal") map[p.type] = p.value;
+  }
+  return {
+    hour: parseInt(map.hour, 10),
+    minute: parseInt(map.minute, 10),
+    second: parseInt(map.second, 10),
+  };
+}
+
+export function getJstDecimalHour(d: Date): number {
+  const { hour, minute, second } = getJstClock(d);
+  return hour + minute / 60 + second / 3600;
+}
+
 export function getJstYmd(d: Date): { y: number; m: number; d: number } {
   const fmt = new Intl.DateTimeFormat("en-CA", {
     timeZone: "Asia/Tokyo",

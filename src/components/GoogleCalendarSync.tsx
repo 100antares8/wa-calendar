@@ -3,6 +3,7 @@
 import { useState, type CSSProperties } from "react";
 import type { MoonPhaseName } from "@/lib/moon-phases";
 import { GOOGLE_EVENT_COLOR_OPTIONS } from "@/lib/google-calendar-shared";
+import { getJstYmd } from "@/lib/jst-date";
 
 interface SyncResult {
   ok: number;
@@ -30,7 +31,10 @@ const selectStyle: CSSProperties = {
 };
 
 export default function GoogleCalendarSync({ isAuthed }: { isAuthed: boolean }) {
-  const [year,    setYear]    = useState(new Date().getFullYear());
+  const j0 = getJstYmd(new Date());
+  const [year,    setYear]    = useState(j0.y);
+  const [syncMonth, setSyncMonth] = useState(j0.m);
+  const [syncFullYear, setSyncFullYear] = useState(true);
   const [sekki,   setSekki]   = useState(true);
   const [moonPhases, setMoonPhases] = useState<Record<MoonPhaseName, boolean>>({
     新月: true,
@@ -65,6 +69,7 @@ export default function GoogleCalendarSync({ isAuthed }: { isAuthed: boolean }) 
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           year,
+          month: syncFullYear ? undefined : syncMonth,
           types,
           moonPhases: phases.length ? phases : undefined,
           sekkiColorId,
@@ -115,6 +120,33 @@ export default function GoogleCalendarSync({ isAuthed }: { isAuthed: boolean }) 
                 <option key={y} value={y}>{y}年</option>
               ))}
             </select>
+            <label style={{ display: "flex", alignItems: "center", gap: "0.35rem", fontSize: "0.78rem", cursor: "pointer" }}>
+              <input
+                type="checkbox"
+                checked={syncFullYear}
+                onChange={() => setSyncFullYear(v => !v)}
+                style={{ accentColor: "var(--indigo)" }}
+              />
+              年全体（12か月）
+            </label>
+            {!syncFullYear && (
+              <>
+                <label style={{ fontSize: "0.8rem", color: "var(--text2)" }}>月:</label>
+                <select
+                  value={syncMonth}
+                  onChange={e => setSyncMonth(Number(e.target.value))}
+                  style={{
+                    border: "1px solid var(--border)", borderRadius: "4px",
+                    padding: "0.25rem 0.5rem", background: "var(--paper)",
+                    fontSize: "0.85rem", color: "var(--text)",
+                  }}
+                >
+                  {Array.from({ length: 12 }, (_, i) => i + 1).map(m => (
+                    <option key={m} value={m}>{m}月</option>
+                  ))}
+                </select>
+              </>
+            )}
           </div>
 
           <div style={{ fontSize: "0.75rem", color: "var(--text2)" }}>
@@ -190,7 +222,7 @@ export default function GoogleCalendarSync({ isAuthed }: { isAuthed: boolean }) 
           </label>
 
           <p style={{ fontSize: "0.72rem", color: "var(--text2)", margin: 0 }}>
-            追加した予定の削除や色の変更は Google カレンダー側で行ってください。基本的に同期は年に一度の利用を想定しています。
+            追加した予定の削除や色の変更は Google カレンダー側で行ってください。月のみを選ぶと、その月に入る節気・月相・旧暦日が対象です。
           </p>
 
           <button

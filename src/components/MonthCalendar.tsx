@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useRef, type TouchEvent } from "react";
 import { getJstYmd } from "@/lib/jst-date";
-import DailySeasonalAside from "./DailySeasonalAside";
 
 interface DayData {
   day: number;
@@ -11,6 +10,20 @@ interface DayData {
   moonEvents: { phase: string; emoji: string; time: string }[];
   sekki: { name: string; reading: string } | null;
   season: string;
+  lunar: {
+    lunarYear: number;
+    lunarMonth: number;
+    lunarDay: number;
+    monthName: string;
+    monthReading: string;
+    dayLabel: string;
+  };
+  rokuyo: { name: string; color: string };
+  yearEto: { eto: string; reading: string };
+  moonAge: number;
+  moonPhase: { name: string; emoji: string };
+  currentSekki: { kanji: string; reading: string; longitude: number };
+  marks: { holiday: string | null; tensha: boolean; tora: boolean; ichimanApprox: boolean };
 }
 
 interface MonthData {
@@ -23,14 +36,17 @@ const SEASON_COLORS: Record<string, string> = {
   "春": "#fce7f3", "夏": "#d1fae5", "秋": "#fef3c7", "冬": "#dbeafe",
 };
 
+const SEASON_EMOJI: Record<string, string> = {
+  "春": "🌸", "夏": "🌿", "秋": "🍁", "冬": "❄️",
+};
+
 export default function MonthCalendar({
-  showDailyAside = true,
   comfortable = false,
-}: { showDailyAside?: boolean; comfortable?: boolean } = {}) {
+}: { comfortable?: boolean } = {}) {
   const j0 = getJstYmd(new Date());
-  const [year,  setYear]  = useState(j0.y);
+  const [year, setYear] = useState(j0.y);
   const [month, setMonth] = useState(j0.m);
-  const [data,  setData]  = useState<MonthData | null>(null);
+  const [data, setData] = useState<MonthData | null>(null);
   const [loading, setLoading] = useState(false);
   const [wide, setWide] = useState(false);
   const touchStart = useRef<{ x: number; y: number } | null>(null);
@@ -45,7 +61,7 @@ export default function MonthCalendar({
 
   useEffect(() => {
     setLoading(true);
-    fetch(`/api/month?year=${year}&month=${month}`)
+    fetch(`/api/month?year=${year}&month=${month}`, { cache: "no-store" })
       .then(r => r.json())
       .then(setData)
       .finally(() => setLoading(false));
@@ -81,16 +97,14 @@ export default function MonthCalendar({
   const WEEKDAYS = ["月", "火", "水", "木", "金", "土", "日"];
 
   const jstToday = getJstYmd(new Date());
-  const cellMinH = comfortable ? 62 : 52;
-  const gridGap = comfortable ? 4 : 2;
-  const titleFs = comfortable ? "1.45rem" : "1.3rem";
-  const subtitleFs = comfortable ? "0.76rem" : "0.7rem";
-  const weekHdrFs = comfortable ? "0.78rem" : "0.7rem";
-  const dayNumFs = comfortable ? "0.95rem" : "0.85rem";
-  const sekkiFs = comfortable ? "0.62rem" : "0.55rem";
-  const moonEmojiFs = comfortable ? "1rem" : "0.9rem";
-  const legendFs = comfortable ? "0.76rem" : "0.7rem";
-  const hintFs = comfortable ? "0.72rem" : "0.65rem";
+  const cellMinH = comfortable && wide ? 128 : wide ? 112 : 96;
+  const gridGap = comfortable ? 4 : 3;
+  const titleFs = comfortable ? "1.45rem" : "1.25rem";
+  const subtitleFs = comfortable ? "0.76rem" : "0.68rem";
+  const weekHdrFs = comfortable ? "0.72rem" : "0.65rem";
+  const dayNumFs = comfortable ? "0.82rem" : "0.74rem";
+  const sekkiFs = comfortable ? "0.55rem" : "0.5rem";
+  const tinyFs = comfortable ? "0.5rem" : "0.46rem";
   const navBtnPad = comfortable ? "0.35rem 0.85rem" : "0.25rem 0.75rem";
   const navBtnFs = comfortable ? "1.05rem" : "1rem";
 
@@ -99,9 +113,12 @@ export default function MonthCalendar({
       className="wa-card fade-in"
       onTouchStart={onTouchStart}
       onTouchEnd={onTouchEnd}
-      style={{ touchAction: "pan-y", flex: wide ? (comfortable ? "1 1 420px" : "1 1 360px") : undefined, minWidth: 0 }}
+      style={{ touchAction: "pan-y", flex: wide ? (comfortable ? "1 1 380px" : "1 1 340px") : undefined, minWidth: 0 }}
     >
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: comfortable ? "1.1rem" : "1rem" }}>
+      <p style={{ fontSize: tinyFs, color: "var(--text2)", lineHeight: 1.45, marginBottom: "0.65rem" }}>
+        表示はグレゴリオ暦の月を土台に、各日の旧暦・節気・祝祭日などを重ねたものです。閏月のある「旧暦だけで1年をみる」暦は別仕様になります（今後拡張可能です）。
+      </p>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: comfortable ? "1.1rem" : "0.85rem" }}>
         <button type="button" onClick={prevMonth} style={{
           background: "none", border: "1px solid var(--border)",
           borderRadius: "4px", padding: navBtnPad,
@@ -127,7 +144,7 @@ export default function MonthCalendar({
           <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: gridGap, marginBottom: "4px" }}>
             {WEEKDAYS.map((w, i) => (
               <div key={w} style={{
-                textAlign: "center", fontSize: weekHdrFs, padding: comfortable ? "6px 0" : "4px 0",
+                textAlign: "center", fontSize: weekHdrFs, padding: comfortable ? "5px 0" : "3px 0",
                 color: i === 5 ? "#1e3a5f" : i === 6 ? "#c0392b" : "var(--text2)",
                 fontFamily: "var(--font-sans, sans-serif)",
               }}>{w}</div>
@@ -148,41 +165,88 @@ export default function MonthCalendar({
 
               return (
                 <div key={d.day} style={{
-                  minHeight: `${cellMinH}px`, padding: comfortable ? "5px" : "3px",
+                  minHeight: `${cellMinH}px`, padding: "4px",
                   background: isToday ? "var(--indigo)" : seasonBg,
                   borderRadius: "4px",
-                  border: isToday ? "none" : "1px solid rgba(0,0,0,0.05)",
+                  border: isToday ? "none" : "1px solid rgba(0,0,0,0.06)",
                   position: "relative",
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: "2px",
+                  overflow: "hidden",
                 }}>
                   <div style={{
-                    fontSize: dayNumFs, fontWeight: isToday ? "700" : "400",
-                    color: isToday ? "#f0e6d3" : isSun ? "#c0392b" : isSat ? "#1e3a5f" : "var(--text)",
-                    textAlign: "center", lineHeight: 1.4,
+                    display: "flex", alignItems: "center", justifyContent: "space-between",
+                    gap: "2px", flexWrap: "wrap",
                   }}>
-                    {d.day}
+                    <span style={{
+                      fontSize: dayNumFs, fontWeight: isToday ? "700" : "600",
+                      color: isToday ? "#f0e6d3" : isSun ? "#c0392b" : isSat ? "#1e3a5f" : "var(--text)",
+                    }}>
+                      {d.day}
+                    </span>
+                    <span style={{ fontSize: tinyFs, opacity: isToday ? 0.95 : 0.85 }}>{SEASON_EMOJI[d.season]}{d.season}</span>
+                  </div>
+
+                  {d.marks.holiday && (
+                    <div style={{
+                      fontSize: tinyFs, color: isToday ? "#fecaca" : "#b91c1c", fontWeight: 600, lineHeight: 1.2,
+                    }}>
+                      祝 {d.marks.holiday}
+                    </div>
+                  )}
+
+                  {(d.marks.tensha || d.marks.tora || d.marks.ichimanApprox) && (
+                    <div style={{ display: "flex", flexWrap: "wrap", gap: "2px", fontSize: tinyFs, lineHeight: 1.2 }}>
+                      {d.marks.tensha && (
+                        <span style={{ background: isToday ? "rgba(255,255,255,0.2)" : "rgba(180,83,9,0.2)", borderRadius: "2px", padding: "0 2px" }}>天赦</span>
+                      )}
+                      {d.marks.tora && (
+                        <span style={{ background: isToday ? "rgba(255,255,255,0.2)" : "rgba(30,58,95,0.15)", borderRadius: "2px", padding: "0 2px" }}>寅の日</span>
+                      )}
+                      {d.marks.ichimanApprox && (
+                        <span style={{ background: isToday ? "rgba(255,255,255,0.2)" : "rgba(127,29,29,0.12)", borderRadius: "2px", padding: "0 2px" }}>一粒万倍・目安</span>
+                      )}
+                    </div>
+                  )}
+
+                  <div style={{ fontSize: tinyFs, color: isToday ? "rgba(240,230,211,0.9)" : "var(--text2)", lineHeight: 1.25 }}>
+                    旧 {d.lunar.monthName}{d.lunar.dayLabel}
+                    <span style={{ fontSize: "0.85em" }}>（{d.lunar.monthReading}）</span>
+                  </div>
+                  <div style={{ fontSize: tinyFs, color: isToday ? "#f0e6d3" : "var(--text)", lineHeight: 1.25 }}>
+                    <span style={{ opacity: isToday ? 0.85 : 0.75 }}>年干支</span> {d.yearEto.eto}
+                    <span style={{ fontSize: "0.9em", opacity: 0.85 }}>{d.yearEto.reading}</span>
+                  </div>
+                  <div style={{ fontSize: tinyFs, color: d.rokuyo.color, fontWeight: 600 }}>
+                    六曜 {d.rokuyo.name}
+                  </div>
+                  <div style={{ fontSize: tinyFs, color: isToday ? "#f0e6d3" : "var(--text)", lineHeight: 1.2 }}>
+                    {d.moonPhase.emoji} {d.moonPhase.name} 月齢{d.moonAge.toFixed(1)}
+                  </div>
+                  <div style={{ fontSize: tinyFs, color: isToday ? "rgba(240,230,211,0.92)" : "var(--text2)", lineHeight: 1.25 }}>
+                    節気 {d.currentSekki.kanji} {d.currentSekki.reading} · 黄経{d.currentSekki.longitude}°
                   </div>
 
                   {d.sekki && (
                     <div style={{
                       fontSize: sekkiFs,
-                      background: "#1e3a5f",
-                      color: "#f0e6d3",
+                      background: isToday ? "rgba(255,255,255,0.25)" : "#1e3a5f",
+                      color: isToday ? "#f0e6d3" : "#f0e6d3",
                       borderRadius: "2px",
-                      padding: comfortable ? "2px 4px" : "1px 3px",
+                      padding: "1px 3px",
                       textAlign: "center",
-                      marginTop: "1px",
-                      lineHeight: 1.3,
+                      lineHeight: 1.25,
                     }}>
-                      {d.sekki.name}
+                      節入 {d.sekki.name}
                     </div>
                   )}
 
                   {d.moonEvents.map((me, i) => (
                     <div key={i} title={`${me.phase} ${me.time}`} style={{
-                      fontSize: moonEmojiFs,
+                      fontSize: "0.85rem",
                       textAlign: "center",
                       lineHeight: 1,
-                      marginTop: "1px",
                     }}>
                       {me.emoji}
                     </div>
@@ -192,8 +256,8 @@ export default function MonthCalendar({
             })}
           </div>
 
-          <div style={{ marginTop: "1rem" }}>
-            <div style={{ display: "flex", flexWrap: "wrap", gap: "0.75rem", fontSize: legendFs, color: "var(--text2)" }}>
+          <div style={{ marginTop: "0.85rem" }}>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: "0.5rem 0.75rem", fontSize: tinyFs, color: "var(--text2)" }}>
               {[
                 { emoji: "🌑", label: "新月" }, { emoji: "🌓", label: "上弦" },
                 { emoji: "🌕", label: "満月" }, { emoji: "🌗", label: "下弦" },
@@ -201,11 +265,12 @@ export default function MonthCalendar({
                 <span key={l.label}>{l.emoji} {l.label}</span>
               ))}
               <span style={{ display: "inline-flex", alignItems: "center", gap: "3px" }}>
-                <span style={{ display: "inline-block", width: "12px", height: "12px", background: "#1e3a5f", borderRadius: "2px" }} />
-                節気
+                <span style={{ display: "inline-block", width: "10px", height: "10px", background: "#1e3a5f", borderRadius: "2px" }} />
+                節入日
               </span>
+              <span>天赦・寅の日・一粒万倍（目安）・祝日は各マス内</span>
             </div>
-            <div style={{ fontSize: hintFs, color: "var(--text2)", marginTop: "0.5rem" }}>
+            <div style={{ fontSize: tinyFs, color: "var(--text2)", marginTop: "0.45rem" }}>
               カレンダー上を左右にスワイプすると前月・翌月に移動します（矢印ボタンでも操作可）。
             </div>
           </div>
@@ -214,25 +279,13 @@ export default function MonthCalendar({
     </div>
   );
 
-  if (wide && showDailyAside) {
+  if (wide) {
     return (
-      <div style={{ display: "flex", gap: "1rem", alignItems: "flex-start", maxWidth: comfortable ? "1120px" : "980px" }}>
+      <div style={{ width: "100%", maxWidth: comfortable ? "1200px" : "1080px", margin: "0 auto" }}>
         {gridCard}
-        <div style={{ flex: comfortable ? "0 0 300px" : "0 0 280px", position: "sticky", top: "1rem" }} className="fade-in">
-          <DailySeasonalAside />
-        </div>
       </div>
     );
   }
 
-  if (wide) {
-    return gridCard;
-  }
-
-  return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
-      {gridCard}
-      {showDailyAside && <DailySeasonalAside />}
-    </div>
-  );
+  return <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>{gridCard}</div>;
 }

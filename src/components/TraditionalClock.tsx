@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { JUNISHI_TIMES, getCurrentJunishiTime, getFuteijiTime, getTimeOfDay } from "@/lib/traditional-time";
+import { getJstClock } from "@/lib/jst-date";
 
 export default function TraditionalClock({ compact = false, comfortable = false }: { compact?: boolean; comfortable?: boolean }) {
   const [now, setNow] = useState(new Date());
@@ -14,11 +15,9 @@ export default function TraditionalClock({ compact = false, comfortable = false 
   const jt = getCurrentJunishiTime(now);
   const futeiji = getFuteijiTime(now);
   const tod = getTimeOfDay(now);
-  const hour = now.getHours();
-  const min  = now.getMinutes();
-  const sec  = now.getSeconds();
+  const { hour, minute: min, second: sec } = getJstClock(now);
 
-  // 時計の角度（十二支は2時間ごと）
+  // 時計の角度（十二支は2時間ごと）— JST
   const clockAngle = ((hour % 12) + min / 60) * 30; // 360/12=30°/時
 
   const tabletComfort = compact && comfortable;
@@ -118,20 +117,25 @@ export default function TraditionalClock({ compact = false, comfortable = false 
 
   if (compact) {
     return (
-      <div className="wa-card fade-in" style={{
+        <div className="wa-card fade-in" style={{
         display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
-        gap: tabletComfort ? "0.5rem" : "0.35rem",
-        padding: tabletComfort ? "0.55rem 0.7rem" : "0.4rem 0.5rem",
+        flexDirection: tabletComfort ? "row" : "column",
+        alignItems: tabletComfort ? "center" : "center",
+        justifyContent: tabletComfort ? "flex-start" : "center",
+        gap: tabletComfort ? "0.85rem" : "0.35rem",
+        padding: tabletComfort ? "0.55rem 0.85rem" : "0.4rem 0.5rem",
+        width: tabletComfort ? "100%" : undefined,
+        boxSizing: "border-box",
       }}>
-        {clockSvg}
-        <div style={{ textAlign: "center", width: "100%" }}>
+        <div style={{ flexShrink: 0 }}>{clockSvg}</div>
+        <div style={{ textAlign: tabletComfort ? "left" : "center", width: tabletComfort ? "auto" : "100%", flex: tabletComfort ? "1" : undefined, minWidth: 0 }}>
           <div style={{ fontSize: tabletComfort ? "1.2rem" : "1.05rem", fontWeight: 600, color: jt.color, lineHeight: 1.15 }}>
             {jt.junishi}の刻 · <span style={{ color: "var(--text)", fontFamily: "var(--font-sans)" }}>
               {hour.toString().padStart(2, "0")}:{min.toString().padStart(2, "0")}
             </span>
-            <span style={{ fontSize: tabletComfort ? "0.82rem" : "0.75rem", color: "var(--text2)", fontWeight: 400 }}>:{sec.toString().padStart(2, "0")}</span>
+            <span style={{ fontSize: tabletComfort ? "0.82rem" : "0.75rem", color: "var(--text2)", fontWeight: 400 }}>
+              :{sec.toString().padStart(2, "0")}
+            </span>
           </div>
           <div style={{ fontSize: tabletComfort ? "0.72rem" : "0.65rem", color: "var(--text2)", marginTop: "0.15rem", lineHeight: 1.35 }}>
             {jt.reading} · {jt.animal} · {jt.subKoku} · {jt.period}
