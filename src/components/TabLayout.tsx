@@ -2,7 +2,18 @@
 
 import { useState, useEffect, ReactNode, type CSSProperties } from "react";
 
+const TAB_IDS = ["today", "clock", "calendar", "kigo", "guide-sync", "lunar-year"] as const;
+
+function normalizeTabFromQuery(tab: string | undefined): string {
+  if (!tab) return "today";
+  if (tab === "guide") return "guide-sync";
+  if (tab === "sekki" || tab === "sync") return "guide-sync";
+  if (TAB_IDS.includes(tab as (typeof TAB_IDS)[number])) return tab;
+  return "today";
+}
+
 interface Props {
+  initialTab?: string;
   todayPanel: ReactNode;
   todayPhoneStack: ReactNode;
   ipadTodayClock: ReactNode;
@@ -11,6 +22,7 @@ interface Props {
   calendarForTabletToday?: ReactNode;
   guideSync: ReactNode;
   seasonalKigo: ReactNode;
+  lunarYearView: ReactNode;
 }
 
 const TABS = [
@@ -18,10 +30,12 @@ const TABS = [
   { id: "clock",       label: "時刻",       emoji: "⏰" },
   { id: "calendar",    label: "暦",         emoji: "🗓" },
   { id: "kigo",        label: "季語",       emoji: "🎋" },
+  { id: "lunar-year",  label: "旧暦年",     emoji: "📿" },
   { id: "guide-sync",  label: "節気・同期", emoji: "🌿" },
 ];
 
 export default function TabLayout({
+  initialTab,
   todayPanel,
   todayPhoneStack,
   ipadTodayClock,
@@ -30,23 +44,23 @@ export default function TabLayout({
   calendarForTabletToday,
   guideSync,
   seasonalKigo,
+  lunarYearView,
 }: Props) {
-  const [activeTab, setActiveTab] = useState("today");
+  const [activeTab, setActiveTab] = useState(() => normalizeTabFromQuery(initialTab));
   const [isIpad, setIsIpad]       = useState(false);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
-    let tab = params.get("tab");
-    if (tab === "guide") tab = "guide-sync";
-    if (tab === "sekki" || tab === "sync") tab = "guide-sync";
-    if (tab && TABS.some(t => t.id === tab)) setActiveTab(tab);
+    const fromUrl = params.get("tab");
+    const normalized = normalizeTabFromQuery(fromUrl ?? initialTab);
+    if (TABS.some(t => t.id === normalized)) setActiveTab(normalized);
 
     const mq = window.matchMedia("(min-width: 768px)");
     setIsIpad(mq.matches);
     const handler = (e: MediaQueryListEvent) => setIsIpad(e.matches);
     mq.addEventListener("change", handler);
     return () => mq.removeEventListener("change", handler);
-  }, []);
+  }, [initialTab]);
 
   const switchTab = (id: string) => {
     setActiveTab(id);
@@ -62,6 +76,7 @@ export default function TabLayout({
     calendar,
     kigo: seasonalKigo,
     "guide-sync": guideSync,
+    "lunar-year": lunarYearView,
   };
 
   if (isIpad) {
@@ -92,7 +107,7 @@ export default function TabLayout({
               onClick={() => switchTab(tab.id)}
               style={{
                 width: "84px",
-                minHeight: "64px",
+                minHeight: "60px",
                 display: "flex",
                 flexDirection: "column",
                 alignItems: "center",
@@ -102,19 +117,29 @@ export default function TabLayout({
                 color: activeTab === tab.id ? "#f0e6d3" : "var(--text2)",
                 border: "none",
                 borderRadius: "12px",
-                fontSize: "0.58rem",
+                fontSize: "0.54rem",
                 fontFamily: "'Noto Sans JP', sans-serif",
                 transition: "all 0.15s",
                 padding: "8px 5px",
               }}
             >
-              <span style={{ fontSize: "1.5rem", lineHeight: 1 }}>{tab.emoji}</span>
-              <span style={{ textAlign: "center", lineHeight: 1.2 }}>{tab.label}</span>
+              <span style={{ fontSize: "1.45rem", lineHeight: 1 }}>{tab.emoji}</span>
+              <span style={{ textAlign: "center", lineHeight: 1.15 }}>{tab.label}</span>
             </button>
           ))}
         </nav>
 
-        <div style={{ flex: 1, padding: "0.85rem 1rem", overflowY: "auto", minWidth: 0 }} key={activeTab} className="fade-in">
+        <div
+          style={{
+            flex: 1,
+            padding: "0.85rem 1rem",
+            overflowY: "auto",
+            minHeight: 0,
+            minWidth: 0,
+            WebkitOverflowScrolling: "touch" as never,
+          } as CSSProperties}
+          className="fade-in"
+        >
           {activeTab === "today" ? (
             <div style={{
               display: "grid",
@@ -133,7 +158,7 @@ export default function TabLayout({
               </div>
             </div>
           ) : (
-            <div style={{ maxWidth: "960px" }}>
+            <div style={{ maxWidth: activeTab === "lunar-year" ? "980px" : "960px", margin: "0 auto" }}>
               {content[activeTab]}
             </div>
           )}
@@ -145,13 +170,13 @@ export default function TabLayout({
   return (
     <div style={{ display: "flex", flexDirection: "column", minHeight: "calc(100dvh - 48px)" }}>
       <div
-        key={activeTab}
         className="fade-in"
         style={{
           flex: 1,
           padding: "0.55rem 0.65rem",
           paddingBottom: "calc(68px + env(safe-area-inset-bottom))",
           overflowY: "auto",
+          minHeight: 0,
           WebkitOverflowScrolling: "touch" as never,
         } as CSSProperties}
       >
@@ -188,14 +213,14 @@ export default function TabLayout({
               background: "none",
               border: "none",
               color: activeTab === tab.id ? "var(--indigo)" : "var(--text2)",
-              fontSize: "0.48rem",
+              fontSize: "0.44rem",
               fontFamily: "'Noto Sans JP', sans-serif",
               padding: "3px 0",
               transition: "color 0.15s",
             }}
           >
             <span style={{
-              fontSize: "1.15rem",
+              fontSize: "1.1rem",
               lineHeight: 1,
               filter: activeTab === tab.id ? "none" : "grayscale(30%)",
               transform: activeTab === tab.id ? "scale(1.08)" : "scale(1)",

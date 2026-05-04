@@ -25,8 +25,9 @@ html {
   font-size: 16px;
   -webkit-text-size-adjust: 100%;
   height: -webkit-fill-available;
-  /* iOS スクロールバウンスを抑制 */
-  overflow: hidden;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior-y: contain;
 }
 
 body {
@@ -169,4 +170,8 @@ input[type="checkbox"] {
 @media (max-width: 520px) {
   .wa-header-sub { display: none; }
   .wa-google-status { display: none; }
+}
+
+a.wa-header-link:hover {
+  background: rgba(30, 58, 95, 0.08);
 }

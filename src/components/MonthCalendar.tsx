@@ -1,7 +1,9 @@
 "use client";
 
 import { useState, useEffect, useRef, type TouchEvent } from "react";
-import { getJstYmd } from "@/lib/jst-date";
+import { getJstYmd, jstNoonUtc } from "@/lib/jst-date";
+import { getSeason } from "@/lib/japanese-calendar";
+import { getSekkiLineColors, getSekkiLineColorsToday } from "@/lib/sekki-colors";
 
 interface DayData {
   day: number;
@@ -50,6 +52,8 @@ export default function MonthCalendar({
   const [loading, setLoading] = useState(false);
   const [wide, setWide] = useState(false);
   const touchStart = useRef<{ x: number; y: number } | null>(null);
+
+  const monthSeason = getSeason(jstNoonUtc({ y: year, m: month, d: 15 }));
 
   useEffect(() => {
     const mq = window.matchMedia("(min-width: 880px)");
@@ -116,8 +120,17 @@ export default function MonthCalendar({
       style={{ touchAction: "pan-y", flex: wide ? (comfortable ? "1 1 380px" : "1 1 340px") : undefined, minWidth: 0 }}
     >
       <p style={{ fontSize: tinyFs, color: "var(--text2)", lineHeight: 1.45, marginBottom: "0.65rem" }}>
-        表示はグレゴリオ暦の月を土台に、各日の旧暦・節気・祝祭日などを重ねたものです。閏月のある「旧暦だけで1年をみる」暦は別仕様になります（今後拡張可能です）。
+        上部の季節はその月のおおまかな区分です。旧暦のみの年ビューはヘッダー「旧暦の年」から開けます。
       </p>
+      <div style={{
+        display: "flex", alignItems: "center", justifyContent: "center", gap: "0.6rem",
+        marginBottom: "0.65rem", flexWrap: "wrap",
+        fontSize: comfortable ? "0.95rem" : "0.85rem", fontWeight: 600,
+        color: "var(--text)",
+      }}>
+        <span>{SEASON_EMOJI[monthSeason.name]}{monthSeason.name}</span>
+        <span style={{ fontWeight: 400, fontSize: tinyFs, color: "var(--text2)" }}>（カレンダー全体の季）</span>
+      </div>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: comfortable ? "1.1rem" : "0.85rem" }}>
         <button type="button" onClick={prevMonth} style={{
           background: "none", border: "1px solid var(--border)",
@@ -162,6 +175,9 @@ export default function MonthCalendar({
               const isSun = weekdayIdxMon0 === 6;
               const isSat = weekdayIdxMon0 === 5;
               const seasonBg = SEASON_COLORS[d.season] || "transparent";
+              const sekCols = isToday
+                ? getSekkiLineColorsToday(d.currentSekki.longitude)
+                : getSekkiLineColors(d.currentSekki.longitude);
 
               return (
                 <div key={d.day} style={{
@@ -185,7 +201,6 @@ export default function MonthCalendar({
                     }}>
                       {d.day}
                     </span>
-                    <span style={{ fontSize: tinyFs, opacity: isToday ? 0.95 : 0.85 }}>{SEASON_EMOJI[d.season]}{d.season}</span>
                   </div>
 
                   {d.marks.holiday && (
@@ -210,29 +225,41 @@ export default function MonthCalendar({
                     </div>
                   )}
 
-                  <div style={{ fontSize: tinyFs, color: isToday ? "rgba(240,230,211,0.9)" : "var(--text2)", lineHeight: 1.25 }}>
-                    旧 {d.lunar.monthName}{d.lunar.dayLabel}
-                    <span style={{ fontSize: "0.85em" }}>（{d.lunar.monthReading}）</span>
+                  <div style={{ fontSize: tinyFs, color: isToday ? "rgba(240,230,211,0.95)" : "var(--text)", lineHeight: 1.25, fontWeight: 500 }}>
+                    {d.lunar.monthName}{d.lunar.dayLabel}
+                    <span style={{ fontSize: "0.92em", color: isToday ? "rgba(240,230,211,0.85)" : "var(--text2)" }}>
+                      （{d.lunar.monthReading}）
+                    </span>
                   </div>
                   <div style={{ fontSize: tinyFs, color: isToday ? "#f0e6d3" : "var(--text)", lineHeight: 1.25 }}>
-                    <span style={{ opacity: isToday ? 0.85 : 0.75 }}>年干支</span> {d.yearEto.eto}
-                    <span style={{ fontSize: "0.9em", opacity: 0.85 }}>{d.yearEto.reading}</span>
+                    {d.yearEto.eto}
+                    <span style={{ color: isToday ? "rgba(240,230,211,0.9)" : "var(--text2)" }}>（{d.yearEto.reading}）</span>
                   </div>
                   <div style={{ fontSize: tinyFs, color: d.rokuyo.color, fontWeight: 600 }}>
                     六曜 {d.rokuyo.name}
                   </div>
                   <div style={{ fontSize: tinyFs, color: isToday ? "#f0e6d3" : "var(--text)", lineHeight: 1.2 }}>
-                    {d.moonPhase.emoji} {d.moonPhase.name} 月齢{d.moonAge.toFixed(1)}
+                    {d.moonPhase.emoji}{" "}{d.lunar.dayLabel}{" "}
+                    <span style={{ color: isToday ? "rgba(240,230,211,0.85)" : "var(--text2)", fontWeight: 400 }}>月齢{d.moonAge.toFixed(1)}</span>
                   </div>
-                  <div style={{ fontSize: tinyFs, color: isToday ? "rgba(240,230,211,0.92)" : "var(--text2)", lineHeight: 1.25 }}>
-                    節気 {d.currentSekki.kanji} {d.currentSekki.reading} · 黄経{d.currentSekki.longitude}°
+                  <div style={{
+                    fontSize: tinyFs,
+                    lineHeight: 1.3,
+                    background: sekCols.background,
+                    color: sekCols.color,
+                    border: `1px solid ${sekCols.border}`,
+                    borderRadius: "4px",
+                    padding: "3px 4px",
+                    marginTop: "1px",
+                  }}>
+                    {d.currentSekki.kanji}{" "}{d.currentSekki.reading} · 黄経{d.currentSekki.longitude}°
                   </div>
 
                   {d.sekki && (
                     <div style={{
                       fontSize: sekkiFs,
                       background: isToday ? "rgba(255,255,255,0.25)" : "#1e3a5f",
-                      color: isToday ? "#f0e6d3" : "#f0e6d3",
+                      color: "#f0e6d3",
                       borderRadius: "2px",
                       padding: "1px 3px",
                       textAlign: "center",
@@ -244,9 +271,10 @@ export default function MonthCalendar({
 
                   {d.moonEvents.map((me, i) => (
                     <div key={i} title={`${me.phase} ${me.time}`} style={{
-                      fontSize: "0.85rem",
+                      fontSize: "0.78rem",
                       textAlign: "center",
                       lineHeight: 1,
+                      opacity: 0.95,
                     }}>
                       {me.emoji}
                     </div>
@@ -268,7 +296,7 @@ export default function MonthCalendar({
                 <span style={{ display: "inline-block", width: "10px", height: "10px", background: "#1e3a5f", borderRadius: "2px" }} />
                 節入日
               </span>
-              <span>天赦・寅の日・一粒万倍（目安）・祝日は各マス内</span>
+              <span>節気帯は色で四季区分（各マス）</span>
             </div>
             <div style={{ fontSize: tinyFs, color: "var(--text2)", marginTop: "0.45rem" }}>
               カレンダー上を左右にスワイプすると前月・翌月に移動します（矢印ボタンでも操作可）。
