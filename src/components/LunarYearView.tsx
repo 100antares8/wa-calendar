@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { getJstYmd } from "@/lib/jst-date";
-import { traditionalEventsMatchingDay } from "@/lib/traditional-events-catalog";
+import { traditionalEventsMatchingDay, cellPaintForTraditionalEvents } from "@/lib/traditional-events-catalog";
 import { goToGuideTradEvent } from "@/lib/calendar-nav";
 
 const WEEKDAYS = ["月", "火", "水", "木", "金", "土", "日"];
@@ -83,7 +83,7 @@ export default function LunarYearView() {
       <p style={{ fontSize: "0.72rem", color: "var(--text2)", lineHeight: 1.5, marginBottom: "0.85rem" }}>
         グレゴリオ暦の1年を走査し、各日の旧暦をまとめています。各旧暦月を、月曜始まりの週グリッドに載せています。
         枠の主表示は旧暦日名です。補足としてその日の格里暦を示します。閏月は本アルゴリズムでは未対応のため、実物の旧暦とずれる場合があります。
-        行事カタログに該当する日は、<strong>同じ色</strong>でマスを塗り、行事名を表示します。行事名をタップすると「節気・同期」で<strong>該当カードへスクロール</strong>し、短く光って示します。
+        行事カタログに該当する日は<strong>マス全体</strong>を暦タブと<strong>同じ色</strong>で塗り、行事名を大きめに表示します。「地域別」は大区域の祭事例です。タップで「節気・同期」の該当解説へ移動します。
       </p>
       <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "1rem", flexWrap: "wrap" }}>
         <label style={{ fontSize: "0.78rem", color: "var(--text2)" }}>西暦年:</label>
@@ -154,8 +154,10 @@ export default function LunarYearView() {
                   r.lunarDay,
                 )
                 : [];
-              const tint = evts[0]?.highlightColor;
               const hasTrad = evts.length > 0;
+              const paint = r
+                ? cellPaintForTraditionalEvents(evts, "var(--paper)")
+                : { background: "transparent" as const };
               return (
               <div
                 key={r ? `${r.gregorian.m}-${r.gregorian.d}-${idx}` : `blank-${idx}`}
@@ -164,13 +166,7 @@ export default function LunarYearView() {
                   padding: "4px",
                   borderRadius: "4px",
                   border: isTodayCell ? "2px solid var(--indigo)" : r ? "1px solid var(--border)" : "1px solid transparent",
-                  background: isTodayCell
-                    ? "rgba(30,58,95,0.14)"
-                    : hasTrad && tint
-                      ? tint
-                      : r
-                        ? "var(--paper)"
-                        : "transparent",
+                  ...paint,
                   display: "flex",
                   flexDirection: "column",
                   justifyContent: "flex-start",
@@ -195,21 +191,39 @@ export default function LunarYearView() {
                         onClick={() => goToGuideTradEvent(ev.id)}
                         title={`${ev.title}の解説へ`}
                         style={{
-                          fontSize: "0.58rem",
-                          lineHeight: 1.3,
+                          fontSize: "0.66rem",
+                          fontWeight: 700,
+                          lineHeight: 1.25,
                           textAlign: "left",
-                          padding: "3px 4px",
-                          borderRadius: "4px",
-                          border: "1px solid rgba(0,0,0,0.1)",
-                          background: ev.highlightColor,
-                          color: "var(--text)",
+                          padding: "5px 4px",
+                          borderRadius: "5px",
+                          border: "1px solid rgba(0,0,0,0.18)",
+                          background: "rgba(255,255,255,0.55)",
+                          color: "#1a1008",
                           cursor: "pointer",
                           fontFamily: "inherit",
                           marginTop: "2px",
                           width: "100%",
                           display: "block",
+                          boxShadow: "0 1px 2px rgba(0,0,0,0.07)",
                         }}
                       >
+                        {ev.regionBlock && (
+                          <>
+                            <span style={{
+                              display: "inline-block",
+                              fontSize: "0.52rem",
+                              fontWeight: 700,
+                              marginRight: "3px",
+                              padding: "0 3px",
+                              borderRadius: "2px",
+                              background: "#7c2d12",
+                              color: "#fff",
+                              verticalAlign: "0.08em",
+                            }}>地域別</span>
+                            <span style={{ fontSize: "0.58rem", fontWeight: 700, marginRight: "4px" }}>{ev.regionBlock}</span>
+                          </>
+                        )}
                         {ev.title}
                       </button>
                     ))}

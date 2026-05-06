@@ -112,7 +112,8 @@ export default function LearningGuidePanel() {
       <section className="wa-card fade-in" style={{ padding: "0.85rem 1rem" }}>
         <h2 style={{ fontSize: "1rem", fontWeight: 700, margin: "0 0 0.35rem" }}>学び・深堀り</h2>
         <p style={{ fontSize: "0.74rem", color: "var(--text2)", lineHeight: 1.55, margin: 0 }}>
-          年中行事・節句、二十四節気と七十二候、旧暦・六曜、十二支の刻について、意味と目安をまとめています。行事の新暦・旧暦は目安であり、地域・閏月・暦注により実日は異なります。
+          年中行事・節句、二十四節気と七十二候、旧暦・六曜、十二支の刻について、意味と目安をまとめています。
+          <strong>地域別</strong>は東北・四国など<strong>大区域ごとの祭事・行事例</strong>です（神社の個別祭礼は列挙しません）。行事の新暦・旧暦は目安であり、地域・閏月・暦注により実日は異なります。
         </p>
       </section>
 
@@ -190,9 +191,25 @@ export default function LearningGuidePanel() {
                           boxSizing: "border-box",
                         }}
                       >
-                        <div style={{ display: "flex", alignItems: "baseline", gap: "0.35rem", flexWrap: "wrap" }}>
-                          <span style={{ fontWeight: 700, fontSize: "0.85rem" }}>{ev.title}</span>
-                          {ev.reading && <span style={{ fontSize: "0.68rem", color: "var(--text2)" }}>（{ev.reading}）</span>}
+                        <div style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}>
+                          {ev.regionBlock && (
+                            <div style={{ display: "flex", alignItems: "center", gap: "6px", flexWrap: "wrap" }}>
+                              <span style={{
+                                fontSize: "0.62rem",
+                                background: "#7c2d12",
+                                color: "#fff",
+                                padding: "2px 7px",
+                                borderRadius: "4px",
+                                fontWeight: 700,
+                                letterSpacing: "0.04em",
+                              }}>地域別</span>
+                              <span style={{ fontSize: "0.72rem", fontWeight: 700, color: "var(--indigo)" }}>{ev.regionBlock}</span>
+                            </div>
+                          )}
+                          <div style={{ display: "flex", alignItems: "baseline", gap: "0.35rem", flexWrap: "wrap" }}>
+                            <span style={{ fontWeight: 700, fontSize: "0.88rem" }}>{ev.title}</span>
+                            {ev.reading && <span style={{ fontSize: "0.68rem", color: "var(--text2)" }}>（{ev.reading}）</span>}
+                          </div>
                         </div>
                         <div style={{ marginTop: "0.35rem", fontSize: "0.7rem", color: "var(--text)" }}>
                           <span style={{ fontWeight: 600 }}>新暦の目安：</span>
