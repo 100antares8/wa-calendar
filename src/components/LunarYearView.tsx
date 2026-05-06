@@ -3,6 +3,12 @@
 import { useEffect, useState } from "react";
 import { getJstYmd } from "@/lib/jst-date";
 
+const WEEKDAYS = ["月", "火", "水", "木", "金", "土", "日"];
+
+function toZenNum(n: number): string {
+  return String(n).replace(/\d/g, ch => String.fromCharCode(ch.charCodeAt(0) - 0x30 + 0xff10));
+}
+
 interface DayRow {
   gregorian: { y: number; m: number; d: number };
   lunarYear: number;
@@ -63,11 +69,17 @@ export default function LunarYearView() {
     }
   }
 
+  const gregorianWeekdayMon0 = (y: number, m: number, d: number) => {
+    const sun0 = new Date(Date.UTC(y, m - 1, d, 3, 0, 0)).getUTCDay();
+    return (sun0 + 6) % 7;
+  };
+
   return (
-    <div className="wa-card fade-in" style={{ maxWidth: "900px", margin: "0 auto" }}>
+    <div className="wa-card fade-in" style={{ maxWidth: "980px", margin: "0 auto" }}>
       <h2 style={{ fontSize: "1rem", fontWeight: 600, marginBottom: "0.5rem" }}>旧暦の年（参考表示）</h2>
       <p style={{ fontSize: "0.72rem", color: "var(--text2)", lineHeight: 1.5, marginBottom: "0.85rem" }}>
-        グレゴリオ暦の1年を走査し、各日の旧暦月をまとめています。閏月は本アルゴリズムでは未対応のため、実物の旧暦とずれる場合があります。
+        グレゴリオ暦の1年を走査し、各日の旧暦をまとめています。各旧暦月を、月曜始まりの週グリッドに載せています。
+        枠の主表示は旧暦日名です。補足としてその日の格里暦を示します。閏月は本アルゴリズムでは未対応のため、実物の旧暦とずれる場合があります。
       </p>
       <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "1rem", flexWrap: "wrap" }}>
         <label style={{ fontSize: "0.78rem", color: "var(--text2)" }}>西暦年:</label>
@@ -87,40 +99,76 @@ export default function LunarYearView() {
 
       {loading && <p style={{ color: "var(--text2)", fontSize: "0.85rem" }}>読み込み中…</p>}
 
-      {!loading && groups.map(g => (
-        <section key={g.key} style={{ marginBottom: "1.25rem" }}>
+      {!loading && groups.map(g => {
+        const sorted = [...g.rows].sort((a, b) => {
+          const ga = a.gregorian, gb = b.gregorian;
+          return ga.m !== gb.m ? ga.m - gb.m : ga.d - gb.d;
+        });
+        const first = sorted[0];
+        const lead = gregorianWeekdayMon0(first.gregorian.y, first.gregorian.m, first.gregorian.d);
+        const total = lead + sorted.length;
+        const trail = total % 7 === 0 ? 0 : 7 - (total % 7);
+        const cells: (DayRow | null)[] = [
+          ...Array.from({ length: lead }, () => null),
+          ...sorted,
+          ...Array.from({ length: trail }, () => null),
+        ];
+        return (
+        <section key={g.key} style={{ marginBottom: "1.35rem" }}>
           <div style={{
-            fontSize: "0.85rem", fontWeight: 600, marginBottom: "0.35rem",
+            fontSize: "0.85rem", fontWeight: 600, marginBottom: "0.5rem",
             padding: "0.35rem 0.5rem", background: "rgba(30,58,95,0.08)", borderRadius: "6px",
           }}>
             {g.title} <span style={{ fontWeight: 400, fontSize: "0.72rem", color: "var(--text2)" }}>（{g.rows.length}日分）</span>
           </div>
+
           <div style={{
             display: "grid",
-            gridTemplateColumns: "repeat(auto-fill, minmax(120px, 1fr))",
+            gridTemplateColumns: "repeat(7, minmax(0, 1fr))",
             gap: "4px",
             fontSize: "0.68rem",
             fontFamily: "var(--font-sans, sans-serif)",
           }}>
-            {g.rows.map(r => (
+            {WEEKDAYS.map((w, i) => (
+              <div key={w} style={{
+                textAlign: "center", fontWeight: 600, padding: "4px 0",
+                color: i === 5 ? "#1e3a5f" : i === 6 ? "#c0392b" : "var(--text2)",
+                fontSize: "0.62rem",
+              }}>{w}</div>
+            ))}
+            {cells.map((r, idx) => (
               <div
-                key={`${r.gregorian.m}-${r.gregorian.d}`}
+                key={r ? `${r.gregorian.m}-${r.gregorian.d}-${idx}` : `blank-${idx}`}
                 style={{
-                  padding: "4px 6px",
+                  minHeight: "64px",
+                  padding: "5px 4px",
                   borderRadius: "4px",
-                  border: "1px solid var(--border)",
-                  background: "var(--paper)",
+                  border: r ? "1px solid var(--border)" : "1px solid transparent",
+                  background: r ? "var(--paper)" : "transparent",
+                  display: "flex",
+                  flexDirection: "column",
+                  justifyContent: "flex-start",
+                  gap: "3px",
                 }}
               >
-                <span style={{ color: "var(--text2)" }}>{r.gregorian.m}/{r.gregorian.d}</span>
-                {" · "}
-                <strong>{r.dayLabel}</strong>
-                <span style={{ color: "var(--text2)" }}>（{r.lunarDay}日）</span>
+                {r && (
+                  <>
+                    <div style={{
+                      fontSize: "0.82rem", fontWeight: 600, lineHeight: 1.2,
+                      fontFamily: "serif",
+                      color: "var(--text)",
+                    }}>{r.dayLabel}</div>
+                    <div style={{ fontSize: "0.58rem", color: "var(--text2)", lineHeight: 1.25 }}>
+                      {toZenNum(r.gregorian.m)}月{toZenNum(r.gregorian.d)}日
+                    </div>
+                  </>
+                )}
               </div>
             ))}
           </div>
         </section>
-      ))}
+        );
+      })}
     </div>
   );
 }

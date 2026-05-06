@@ -42,6 +42,10 @@ const SEASON_EMOJI: Record<string, string> = {
   "春": "🌸", "夏": "🌿", "秋": "🍁", "冬": "❄️",
 };
 
+function toZenNum(n: number): string {
+  return String(n).replace(/\d/g, ch => String.fromCharCode(ch.charCodeAt(0) - 0x30 + 0xff10));
+}
+
 export default function MonthCalendar({
   comfortable = false,
 }: { comfortable?: boolean } = {}) {
@@ -112,6 +116,10 @@ export default function MonthCalendar({
   const navBtnPad = comfortable ? "0.35rem 0.85rem" : "0.25rem 0.75rem";
   const navBtnFs = comfortable ? "1.05rem" : "1rem";
 
+  const headerLunar = data?.days?.length
+    ? (data.days.find(x => x.day === 15) ?? data.days[Math.min(data.days.length - 1, 13)])
+    : null;
+
   const gridCard = (
     <div
       className="wa-card fade-in"
@@ -137,9 +145,27 @@ export default function MonthCalendar({
           borderRadius: "4px", padding: navBtnPad,
           cursor: "pointer", color: "var(--text2)", fontSize: navBtnFs,
         }}>‹</button>
-        <div style={{ textAlign: "center" }}>
-          <div style={{ fontSize: titleFs, fontWeight: "500" }}>{year}年{month}月</div>
-          <div style={{ fontSize: subtitleFs, color: "var(--text2)", letterSpacing: "0.1em" }}>
+        <div style={{ textAlign: "center", maxWidth: "min(100%, 520px)" }}>
+          <div style={{
+            fontSize: titleFs, fontWeight: "500",
+            display: "flex", flexWrap: "wrap", alignItems: "baseline", justifyContent: "center",
+            gap: "0.35rem 0.65rem",
+          }}>
+            <span>{year}年{month}月</span>
+            {headerLunar && (
+              <>
+                <span style={{ fontSize: subtitleFs, fontWeight: 600, color: "var(--text)" }}>
+                  {headerLunar.lunar.monthName}
+                  <span style={{ fontWeight: 400, color: "var(--text2)" }}>（{headerLunar.lunar.monthReading}）</span>
+                </span>
+                <span style={{ fontSize: subtitleFs, fontWeight: 600, color: "var(--text)" }}>
+                  {headerLunar.yearEto.eto}
+                  <span style={{ fontWeight: 400, color: "var(--text2)" }}>（{headerLunar.yearEto.reading}）</span>
+                </span>
+              </>
+            )}
+          </div>
+          <div style={{ fontSize: subtitleFs, color: "var(--text2)", letterSpacing: "0.1em", marginTop: "0.2rem" }}>
             {["一月","二月","三月","四月","五月","六月","七月","八月","九月","十月","十一月","十二月"][month-1]}
           </div>
         </div>
@@ -192,14 +218,22 @@ export default function MonthCalendar({
                   overflow: "hidden",
                 }}>
                   <div style={{
-                    display: "flex", alignItems: "center", justifyContent: "space-between",
-                    gap: "2px", flexWrap: "wrap",
+                    display: "flex", alignItems: "baseline", justifyContent: "space-between",
+                    gap: "4px", flexWrap: "wrap",
                   }}>
                     <span style={{
-                      fontSize: dayNumFs, fontWeight: isToday ? "700" : "600",
+                      fontSize: `calc(${dayNumFs} + 0.06rem)`, fontWeight: isToday ? "700" : "650",
                       color: isToday ? "#f0e6d3" : isSun ? "#c0392b" : isSat ? "#1e3a5f" : "var(--text)",
+                      letterSpacing: "0.02em",
                     }}>
-                      {d.day}
+                      {d.lunar.dayLabel}
+                    </span>
+                    <span style={{
+                      fontSize: tinyFs, fontWeight: 500,
+                      color: isToday ? "rgba(240,230,211,0.9)" : "var(--text2)",
+                      flexShrink: 0,
+                    }}>
+                      新{toZenNum(d.day)}日
                     </span>
                   </div>
 
@@ -225,21 +259,11 @@ export default function MonthCalendar({
                     </div>
                   )}
 
-                  <div style={{ fontSize: tinyFs, color: isToday ? "rgba(240,230,211,0.95)" : "var(--text)", lineHeight: 1.25, fontWeight: 500 }}>
-                    {d.lunar.monthName}{d.lunar.dayLabel}
-                    <span style={{ fontSize: "0.92em", color: isToday ? "rgba(240,230,211,0.85)" : "var(--text2)" }}>
-                      （{d.lunar.monthReading}）
-                    </span>
-                  </div>
-                  <div style={{ fontSize: tinyFs, color: isToday ? "#f0e6d3" : "var(--text)", lineHeight: 1.25 }}>
-                    {d.yearEto.eto}
-                    <span style={{ color: isToday ? "rgba(240,230,211,0.9)" : "var(--text2)" }}>（{d.yearEto.reading}）</span>
-                  </div>
                   <div style={{ fontSize: tinyFs, color: d.rokuyo.color, fontWeight: 600 }}>
                     六曜 {d.rokuyo.name}
                   </div>
                   <div style={{ fontSize: tinyFs, color: isToday ? "#f0e6d3" : "var(--text)", lineHeight: 1.2 }}>
-                    {d.moonPhase.emoji}{" "}{d.lunar.dayLabel}{" "}
+                    {d.moonPhase.emoji}{" "}
                     <span style={{ color: isToday ? "rgba(240,230,211,0.85)" : "var(--text2)", fontWeight: 400 }}>月齢{d.moonAge.toFixed(1)}</span>
                   </div>
                   <div style={{

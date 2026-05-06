@@ -4,6 +4,80 @@ import { useEffect, useState } from "react";
 import { JUNISHI_TIMES, getCurrentJunishiTime, getFuteijiTime, getTimeOfDay } from "@/lib/traditional-time";
 import { getJstClock } from "@/lib/jst-date";
 
+function JunishiColumnGrid({ current }: { current: string }) {
+  return (
+    <div
+      title="十二支の刻（定時法・JST）"
+      style={{
+        display: "grid",
+        gridTemplateColumns: "repeat(2, 1fr)",
+        gridAutoRows: "minmax(0, 1fr)",
+        gap: "2px 5px",
+        fontSize: "0.7rem",
+        flexShrink: 0,
+        alignSelf: "stretch",
+        justifyItems: "center",
+      }}
+    >
+      {JUNISHI_TIMES.map(j => {
+        const on = j.junishi === current;
+        return (
+          <span
+            key={j.junishi}
+            style={{
+              fontFamily: "serif",
+              lineHeight: 1.15,
+              fontWeight: on ? 800 : 500,
+              color: on ? j.color : "var(--text2)",
+              textAlign: "center",
+            }}
+          >
+            {j.junishi}
+          </span>
+        );
+      })}
+    </div>
+  );
+}
+
+function JunishiRow({ current, dense }: { current: string; dense: boolean }) {
+  return (
+    <div
+      title="十二支の刻（定時法・JST）"
+      style={{
+        display: "flex",
+        flexWrap: "wrap",
+        justifyContent: "center",
+        gap: dense ? "3px" : "5px",
+        width: "100%",
+        maxWidth: dense ? "280px" : "420px",
+        margin: dense ? "0.1rem auto 0" : "0.35rem auto",
+      }}
+    >
+      {JUNISHI_TIMES.map(j => {
+        const on = j.junishi === current;
+        return (
+          <span
+            key={j.junishi}
+            style={{
+              fontFamily: "serif",
+              fontSize: dense ? "0.72rem" : "0.88rem",
+              fontWeight: on ? 800 : 500,
+              color: on ? j.color : "#8b7355",
+              padding: dense ? "1px 4px" : "2px 6px",
+              borderRadius: "4px",
+              border: on ? `1px solid ${j.color}` : "1px solid transparent",
+              background: on ? "rgba(201,168,76,0.08)" : "transparent",
+            }}
+          >
+            {j.junishi}
+          </span>
+        );
+      })}
+    </div>
+  );
+}
+
 export default function TraditionalClock({ compact = false, comfortable = false }: { compact?: boolean; comfortable?: boolean }) {
   const [now, setNow] = useState(new Date());
 
@@ -127,7 +201,9 @@ export default function TraditionalClock({ compact = false, comfortable = false 
         width: tabletComfort ? "100%" : undefined,
         boxSizing: "border-box",
       }}>
+        {tabletComfort && <JunishiColumnGrid current={jt.junishi} />}
         <div style={{ flexShrink: 0 }}>{clockSvg}</div>
+        {!tabletComfort && <JunishiRow current={jt.junishi} dense />}
         <div style={{ textAlign: tabletComfort ? "left" : "center", width: tabletComfort ? "auto" : "100%", flex: tabletComfort ? "1" : undefined, minWidth: 0 }}>
           <div style={{ fontSize: tabletComfort ? "1.2rem" : "1.05rem", fontWeight: 600, color: jt.color, lineHeight: 1.15 }}>
             {jt.junishi}の刻 · <span style={{ color: "var(--text)", fontFamily: "var(--font-sans)" }}>
@@ -159,6 +235,7 @@ export default function TraditionalClock({ compact = false, comfortable = false 
   return (
     <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "1rem" }}>
       {clockSvg}
+      <JunishiRow current={jt.junishi} dense={false} />
 
       {/* 現在の刻 */}
       <div style={{ textAlign: "center" }}>
