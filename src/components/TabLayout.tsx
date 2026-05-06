@@ -16,7 +16,6 @@ interface Props {
   initialTab?: string;
   todayPanel: ReactNode;
   todayPhoneStack: ReactNode;
-  ipadTodayClock: ReactNode;
   clock: ReactNode;
   calendar: ReactNode;
   calendarForTabletToday?: ReactNode;
@@ -38,7 +37,6 @@ export default function TabLayout({
   initialTab,
   todayPanel,
   todayPhoneStack,
-  ipadTodayClock,
   clock,
   calendar,
   calendarForTabletToday,
@@ -151,8 +149,7 @@ export default function TabLayout({
               alignItems: "stretch",
             }}>
               <div style={{ display: "flex", flexDirection: "column", minWidth: 0, minHeight: 0 }}>
-                <div style={{ flex: "1 1 auto", minHeight: 0 }}>{todayPanel}</div>
-                <div style={{ flex: "0 0 auto", marginTop: "0.85rem", width: "100%" }}>{ipadTodayClock}</div>
+                {todayPanel}
               </div>
               <div style={{ minWidth: 0, minHeight: 0 }}>{calendarForTabletToday ?? calendar}</div>
             </div>

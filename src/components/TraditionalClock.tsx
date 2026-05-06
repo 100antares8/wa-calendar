@@ -163,7 +163,8 @@ export default function TraditionalClock({
   const { hour, minute: min, second: sec } = getJstClock(now);
 
   const tabletComfort = compact && comfortable;
-  const sizeCompact = layoutPairWide ? 156 : 132;
+  const dualRow = compact || layoutPairWide;
+  const sizeCompact = compact ? (layoutPairWide ? 156 : 124) : 132;
   const sizeFull = layoutPairWide ? 208 : 188;
   const size = compact ? sizeCompact : sizeFull;
   const labelFs = compact ? 11 : 12;
@@ -172,10 +173,10 @@ export default function TraditionalClock({
     <div
       style={{
         display: "flex",
-        flexDirection: layoutPairWide ? "row" : "column",
+        flexDirection: dualRow ? "row" : "column",
         alignItems: "center",
         justifyContent: "center",
-        gap: layoutPairWide ? "0.65rem" : "0.45rem",
+        gap: dualRow ? "0.5rem" : "0.45rem",
         flexShrink: 0,
       }}
     >

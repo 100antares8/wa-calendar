@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useMemo } from "react";
 import MoonSvg from "./MoonSvg";
+import TraditionalClock from "./TraditionalClock";
 import { getSeasonalCustomsForToday } from "@/lib/seasonal-customs";
 
 interface TodayData {
@@ -229,6 +230,8 @@ export default function TodayPanel({ compact = false, comfortable = false }: { c
             {data.currentSekki.reading} · 黄経{data.currentSekki.longitude}°
           </span>
         </div>
+
+        <TraditionalClock compact comfortable={comfortable} />
       </div>
     );
   }
@@ -356,6 +359,8 @@ export default function TodayPanel({ compact = false, comfortable = false }: { c
           </span>
         </div>
       </div>
+
+      <TraditionalClock />
     </div>
   );
 }

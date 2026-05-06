@@ -167,19 +167,6 @@ export default function SeasonalKigoPanel() {
     });
   }, [viewDate.y, viewDate.m, viewDate.d]);
 
-  const savedDates = useMemo(() => {
-    const map = new Map<string, { y: number; m: number; d: number }>();
-    for (const key of Array.from(saved)) {
-      const p = parseKey(key);
-      if (!p) continue;
-      const label = `${p.y}-${p.m}-${p.d}`;
-      map.set(label, { y: p.y, m: p.m, d: p.d });
-    }
-    return Array.from(map.values()).sort((a, b) =>
-      b.y !== a.y ? b.y - a.y : b.m !== a.m ? b.m - a.m : b.d - a.d,
-    );
-  }, [saved]);
-
   const today = getJstYmd(new Date());
   const isToday =
     viewDate.y === today.y && viewDate.m === today.m && viewDate.d === today.d;
@@ -251,26 +238,55 @@ export default function SeasonalKigoPanel() {
             }}
           />
         </label>
-        <button
-          type="button"
-          onClick={() => setSavedListOpen(o => !o)}
-          style={{
-            flex: "1 1 100%",
-            marginTop: "0.15rem",
-            border: "1px solid var(--indigo)",
-            borderRadius: "6px",
-            padding: "0.4rem 0.65rem",
-            background: savedListOpen ? "rgba(30,58,95,0.12)" : "var(--paper)",
-            color: "var(--indigo)",
-            cursor: "pointer",
-            fontSize: "0.76rem",
-            fontWeight: 600,
-          }}
-        >
-          🔖 {savedListOpen ? "保存一覧を閉じる" : "保存を日付順に表示"}
-          {saved.size > 0 ? `（${saved.size}件）` : ""}
-        </button>
       </div>
+
+      <LineBlock
+        title="季節暦のことわざ・熟語"
+        sub="暦や季節を味わう言葉"
+        line={bundle.proverb}
+        saved={saved.has(saveKey(viewDate.y, viewDate.m, viewDate.d, "proverb"))}
+        onToggleSave={() => toggleSave("proverb")}
+      />
+      <LineBlock
+        title="先人の言葉・俳句趣"
+        sub="歌・俳諧・随筆などの心象にふれる一句"
+        line={bundle.figure}
+        saved={saved.has(saveKey(viewDate.y, viewDate.m, viewDate.d, "figure"))}
+        onToggleSave={() => toggleSave("figure")}
+      />
+      <LineBlock
+        title="茶・茶湯に関する言葉"
+        sub="千利休・表千家・裏千家・江戸千家の系統をふまえた教訓・見立て"
+        line={bundle.tea}
+        saved={saved.has(saveKey(viewDate.y, viewDate.m, viewDate.d, "tea"))}
+        onToggleSave={() => toggleSave("tea")}
+      />
+      <LineBlock
+        title="自然の一句"
+        sub="花・川・山など、季の景色を一首に凝縮"
+        line={bundle.nature}
+        saved={saved.has(saveKey(viewDate.y, viewDate.m, viewDate.d, "nature"))}
+        onToggleSave={() => toggleSave("nature")}
+      />
+
+      <button
+        type="button"
+        onClick={() => setSavedListOpen(o => !o)}
+        style={{
+          width: "100%",
+          border: "1px solid var(--indigo)",
+          borderRadius: "8px",
+          padding: "0.45rem 0.75rem",
+          background: savedListOpen ? "rgba(30,58,95,0.12)" : "var(--paper)",
+          color: "var(--indigo)",
+          cursor: "pointer",
+          fontSize: "0.78rem",
+          fontWeight: 600,
+        }}
+      >
+        🔖 {savedListOpen ? "保存一覧を閉じる" : "保存を日付順に表示"}
+        {saved.size > 0 ? `（${saved.size}件）` : ""}
+      </button>
 
       {savedListOpen && (
         <div
@@ -321,59 +337,6 @@ export default function SeasonalKigoPanel() {
           )}
         </div>
       )}
-      {savedDates.length > 0 && (
-        <div style={{ fontSize: "0.72rem", color: "var(--text2)" }}>
-          <div style={{ fontWeight: 600, color: "var(--text)", marginBottom: "0.35rem" }}>保存のある日</div>
-          <div style={{ display: "flex", flexWrap: "wrap", gap: "0.35rem" }}>
-            {savedDates.slice(0, 24).map(j => (
-              <button
-                key={`${j.y}-${j.m}-${j.d}`}
-                type="button"
-                onClick={() => setViewDate(j)}
-                style={{
-                  border: "1px solid var(--border)", borderRadius: "999px",
-                  padding: "0.15rem 0.55rem", background:
-                    viewDate.y === j.y && viewDate.m === j.m && viewDate.d === j.d
-                      ? "var(--indigo)" : "var(--paper)",
-                  color:
-                    viewDate.y === j.y && viewDate.m === j.m && viewDate.d === j.d
-                      ? "#f0e6d3" : "var(--text)",
-                  cursor: "pointer", fontSize: "0.7rem",
-                }}
-              >{formatJstHeading(j)}</button>
-            ))}
-          </div>
-        </div>
-      )}
-
-      <LineBlock
-        title="季節暦のことわざ・熟語"
-        sub="暦や季節を味わう言葉"
-        line={bundle.proverb}
-        saved={saved.has(saveKey(viewDate.y, viewDate.m, viewDate.d, "proverb"))}
-        onToggleSave={() => toggleSave("proverb")}
-      />
-      <LineBlock
-        title="先人の言葉・俳句趣"
-        sub="歌・俳諧・随筆などの心象にふれる一句"
-        line={bundle.figure}
-        saved={saved.has(saveKey(viewDate.y, viewDate.m, viewDate.d, "figure"))}
-        onToggleSave={() => toggleSave("figure")}
-      />
-      <LineBlock
-        title="茶・茶湯に関する言葉"
-        sub="千利休・表千家・裏千家・江戸千家の系統をふまえた教訓・見立て"
-        line={bundle.tea}
-        saved={saved.has(saveKey(viewDate.y, viewDate.m, viewDate.d, "tea"))}
-        onToggleSave={() => toggleSave("tea")}
-      />
-      <LineBlock
-        title="自然の一句"
-        sub="花・川・山など、季の景色を一首に凝縮"
-        line={bundle.nature}
-        saved={saved.has(saveKey(viewDate.y, viewDate.m, viewDate.d, "nature"))}
-        onToggleSave={() => toggleSave("nature")}
-      />
     </div>
   );
 }
