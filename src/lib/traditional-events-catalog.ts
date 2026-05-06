@@ -3,10 +3,24 @@
  * 旧暦はアプリと同じ簡易換算。地域・派閏・年によって実日は異なります。
  */
 
+/** 一覧の季節分け（歳時の見やすさ用。天文上の四季とは一致しません） */
+export type EventDisplaySeason = "spring" | "summer" | "autumn" | "winter";
+
+export const SEASON_ORDER: EventDisplaySeason[] = ["spring", "summer", "autumn", "winter"];
+
+export const SEASON_LABELS: Record<EventDisplaySeason, string> = {
+  spring: "春",
+  summer: "夏",
+  autumn: "秋",
+  winter: "冬",
+};
+
 export interface TraditionalEventEntry {
   id: string;
   title: string;
   reading?: string;
+  /** 一覧の季節（春夏秋冬） */
+  displaySeason: EventDisplaySeason;
   /** 新暦の目安表記（使用者向け） */
   gregorianLabel: string;
   /** 旧暦の目安表記 */
@@ -27,11 +41,60 @@ export interface TraditionalEventEntry {
   openMonth: number;
 }
 
+/** 並び：その季節内でおよその新暦順 */
+function eventSortKey(e: TraditionalEventEntry): number {
+  const g = e.matchGregorian?.[0];
+  if (g) return g.m * 40 + g.d;
+  if (e.matchLunarDay) return e.openMonth * 40 + 12;
+  if (e.matchLunarRange) return e.openMonth * 40 + e.matchLunarRange.from;
+  return 500 + e.openMonth;
+}
+
+export function sortEventsForSeasonDisplay(list: TraditionalEventEntry[]): TraditionalEventEntry[] {
+  return [...list].sort((a, b) => eventSortKey(a) - eventSortKey(b));
+}
+
+export function getTraditionalEventsBySeason(): {
+  season: EventDisplaySeason;
+  label: string;
+  events: TraditionalEventEntry[];
+}[] {
+  const map: Record<EventDisplaySeason, TraditionalEventEntry[]> = {
+    spring: [],
+    summer: [],
+    autumn: [],
+    winter: [],
+  };
+  for (const e of TRADITIONAL_EVENTS) {
+    map[e.displaySeason].push(e);
+  }
+  return SEASON_ORDER.map(s => ({
+    season: s,
+    label: SEASON_LABELS[s],
+    events: sortEventsForSeasonDisplay(map[s]),
+  }));
+}
+
 export const TRADITIONAL_EVENTS: TraditionalEventEntry[] = [
+  {
+    id: "oshogatsu",
+    title: "正月・年神様（三が日）",
+    reading: "しょうがつ",
+    displaySeason: "winter",
+    gregorianLabel: "新暦 1月1日〜3日（三が日）",
+    lunarLabel: "旧正月を祝う文化圏も国内にあります",
+    variability: "初詣の混雑ピーク・山車出しは宮ごとに一覧参照。",
+    explanation:
+      "年神を迎え歳徳神に祈る歳始。門松・注連縄で結界を示し鏡餅を供えるなど家ごとの作法があります。神社は歳旦祭・初詣で氏子縁を深める大繁忙期です。",
+    highlightColor: "rgba(185,28,28,0.18)",
+    matchGregorian: [{ m: 1, d: 1 }, { m: 1, d: 2 }, { m: 1, d: 3 }],
+    openMonth: 1,
+  },
   {
     id: "kagamibiraki",
     title: "鏡開き",
     reading: "かがみびらき",
+    displaySeason: "winter",
     gregorianLabel: "新暦 1月11日を中心に地域・家庭で異なる",
     lunarLabel: "正月の餅の儀礼に連なる日取り",
     variability: "1月20日近辺で行う地方もあります。",
@@ -42,22 +105,24 @@ export const TRADITIONAL_EVENTS: TraditionalEventEntry[] = [
     openMonth: 1,
   },
   {
-    id: "omisoka",
-    title: "大晦日",
-    reading: "おおみそか",
-    gregorianLabel: "新暦 12月31日",
-    lunarLabel: "旧暦では年により十一月〜正月前後",
-    variability: "除夜の鐘の時刻・回数は寺により掲示あり。",
+    id: "koshogatsu",
+    title: "小正月",
+    reading: "こしょうがつ",
+    displaySeason: "winter",
+    gregorianLabel: "新暦 1月15日にあわせる地域が目安",
+    lunarLabel: "旧暦 正月十五日に相当するころ",
+    variability: "左義長・どんど焼きの時期は村・町ごとにずれます。",
     explanation:
-      "一年の最終日に家を掃き歳神を送り、除夜の鐘で煩悩を払う俗に結びつく夜。そばを食べる「年越し蕎麦」や神社の年越し参拝は近世以降に整った面があります。",
-    highlightColor: "rgba(55,48,163,0.22)",
-    matchGregorian: [{ m: 12, d: 31 }],
-    openMonth: 12,
+      "正月飾りを下して火に送る左義長、若者の祝いのこんこん舞など、共同体の春を呼ぶ歳事が残る地方があります。桜の枝で粥をかき混ぜる「粥かき」など粥祈願の地方も。",
+    highlightColor: "rgba(234,179,8,0.22)",
+    matchGregorian: [{ m: 1, d: 15 }],
+    openMonth: 1,
   },
   {
     id: "nanakusa",
     title: "七草がゆ",
     reading: "ななくさがゆ",
+    displaySeason: "spring",
     gregorianLabel: "新暦 1月7日（人日の節句）",
     lunarLabel: "旧暦では年により正月七日付近",
     variability: "地方・家庭で粥の内容が異なります。",
@@ -68,9 +133,24 @@ export const TRADITIONAL_EVENTS: TraditionalEventEntry[] = [
     openMonth: 1,
   },
   {
+    id: "setsubun",
+    title: "節分（豆まき・恵方巻）",
+    reading: "せつぶん",
+    displaySeason: "winter",
+    gregorianLabel: "新暦 2月3日頃（立春の前日）",
+    lunarLabel: "立春前夜の祭祀に対応",
+    variability: "年によって2月2日となる場合があります。",
+    explanation:
+      "季節の変わり目の祓い。撒豆の「鬼は外福は内」は室町期の室礼に近い形で普及。恵方巻は近代以降の商俗が強い一方、方角信仰の楽しみとして定着しています。神社では節分祭で追儺の舞などがあります。",
+    highlightColor: "rgba(217,119,6,0.24)",
+    matchGregorian: [{ m: 2, d: 3 }, { m: 2, d: 2 }],
+    openMonth: 2,
+  },
+  {
     id: "hina",
     title: "雛祭り（桃の節句）",
     reading: "ひなまつり",
+    displaySeason: "spring",
     gregorianLabel: "新暦 3月3日",
     lunarLabel: "旧暦では三月ニ営む所も（地域差大）",
     variability: "雛人形をいつ飾るか・いつ納めるかは家ごとに異なります。",
@@ -81,9 +161,24 @@ export const TRADITIONAL_EVENTS: TraditionalEventEntry[] = [
     openMonth: 3,
   },
   {
+    id: "ohigan_haru",
+    title: "春の彼岸（中日の目安）",
+    reading: "はるのひがん",
+    displaySeason: "spring",
+    gregorianLabel: "新暦 3月20日前後を中日とする所（春分に寄せる）",
+    lunarLabel: "旧暦では年によりずれます",
+    variability: "春分の日は年ごとに変わります。前三後七の寺もあります。",
+    explanation:
+      "春分を中日とする一週間前後の供養の期間。納骨・墓参りと結びつきやすく、ぼたもち・おはぎを供える風習があります。宗派・寺規により呼称・期間が異なります。",
+    highlightColor: "rgba(52,211,153,0.22)",
+    matchGregorian: [{ m: 3, d: 19 }, { m: 3, d: 20 }, { m: 3, d: 21 }],
+    openMonth: 3,
+  },
+  {
     id: "shunbun",
     title: "春分の日（行事参考）",
     reading: "しゅんぶん",
+    displaySeason: "spring",
     gregorianLabel: "新暦 3月20日前後（天文計算・年により前後）",
     lunarLabel: "旧暦は年によりずれます",
     variability: "祝日の日付は年ごとに官報で定まります。",
@@ -97,6 +192,7 @@ export const TRADITIONAL_EVENTS: TraditionalEventEntry[] = [
     id: "hanami",
     title: "花見・桜の季（俗信の目安）",
     reading: "はなみ",
+    displaySeason: "spring",
     gregorianLabel: "新暦 3月下旬〜4月上旬（気象・地域差）",
     lunarLabel: "旧暦に固定日なし",
     variability: "開花・満開は年・地域で大きく変わります。",
@@ -107,9 +203,24 @@ export const TRADITIONAL_EVENTS: TraditionalEventEntry[] = [
     openMonth: 4,
   },
   {
+    id: "hanamatsuri",
+    title: "灌仏会（花まつり）",
+    reading: "かんぶつえ・はなまつり",
+    displaySeason: "spring",
+    gregorianLabel: "新暦 4月8日に営む寺が目安",
+    lunarLabel: "釈尊降誕会。宗派により日取りが異なります",
+    variability: "甘茶で小仏像を灌ぐ「花御堂」の形態は寺によります。",
+    explanation:
+      "仏教の釈尊降誕を祝う法会。稚児行列や花まつりとして広く知られ、幼児の健やかな成長への願いとも結びつきます。寺観では駐車・混雑に留意してください。",
+    highlightColor: "rgba(236,72,153,0.2)",
+    matchGregorian: [{ m: 4, d: 8 }],
+    openMonth: 4,
+  },
+  {
     id: "tango",
     title: "端午の節句・鯉のぼり",
     reading: "たんごのせっく",
+    displaySeason: "summer",
     gregorianLabel: "新暦 5月5日",
     lunarLabel: "五月五日にあわせる所と旧暦五月に戻す所があります",
     variability: "菖蒲湯・柏餅は前日から連休にかけて行う家庭も。",
@@ -120,9 +231,24 @@ export const TRADITIONAL_EVENTS: TraditionalEventEntry[] = [
     openMonth: 5,
   },
   {
+    id: "nyubai",
+    title: "入梅（季節目安）",
+    reading: "にゅうばい",
+    displaySeason: "summer",
+    gregorianLabel: "新暦 6月上旬〜中旬（気象庁の入梅発表に準ずる所）",
+    lunarLabel: "旧暦に固定日なし",
+    variability: "年・地域で大きく変わります。本欄は暦上の目安日を便宜置いています。",
+    explanation:
+      "梅雨入りの目安として報じられるころ。農作·養生・衣替えの準備と結びつく感覚があります（実際の入梅は気象庁等の発表で確定します）。",
+    highlightColor: "rgba(100,116,139,0.28)",
+    matchGregorian: [{ m: 6, d: 10 }, { m: 6, d: 11 }, { m: 6, d: 12 }],
+    openMonth: 6,
+  },
+  {
     id: "tanabata",
     title: "七夕",
     reading: "たなばた",
+    displaySeason: "summer",
     gregorianLabel: "新暦 7月7日に祝う地域が多数",
     lunarLabel: "旧暦七月七日に合わせる祭（仙台など）も有名",
     variability: "笹飾り・短冊の時期は商家・地域で数日ずれます。",
@@ -133,9 +259,24 @@ export const TRADITIONAL_EVENTS: TraditionalEventEntry[] = [
     openMonth: 7,
   },
   {
+    id: "hangesho",
+    title: "半夏生（農事の目安）",
+    reading: "はんげしょう",
+    displaySeason: "summer",
+    gregorianLabel: "新暦 7月1日〜2日頃（夏至から11日目の目安）",
+    lunarLabel: "旧暦に一本化されないため暦注で確認が必要です",
+    variability: "地域で「いつから田植えを止めるか」が異なり、直呼びの日付もばらつきます。",
+    explanation:
+      "昔の農村では田植えを控える目安とされたころ（半夏という薬草の花期の伝承など諸説）。沖縄では「ハリ」を祝う行事文化とも結びつきます。現代は旬の食材・郷土料理の話題として親しまれることが多いです。",
+    highlightColor: "rgba(34,197,94,0.22)",
+    matchGregorian: [{ m: 7, d: 1 }, { m: 7, d: 2 }],
+    openMonth: 7,
+  },
+  {
     id: "nagoshi",
     title: "夏越の祓・茅の輪くぐり",
     reading: "なごしのはらえ・ちのわくぐり",
+    displaySeason: "summer",
     gregorianLabel: "新暦 6月30日に行う神社が多い（六月晦日）",
     lunarLabel: "旧暦 六月晦日（大晦に相当）",
     variability: "茅の輪の設置期間・くぐり方は神社ごとに掲示あり。",
@@ -149,6 +290,7 @@ export const TRADITIONAL_EVENTS: TraditionalEventEntry[] = [
     id: "obon",
     title: "お盆（盂蘭盆・墓参りの目安）",
     reading: "おぼん",
+    displaySeason: "summer",
     gregorianLabel: "新暦 8月13日〜16日に行う地域が目安（東京盆・新盆など差）",
     lunarLabel: "旧暦 七月十三日〜十六日（または十五日中心）",
     variability:
@@ -163,6 +305,7 @@ export const TRADITIONAL_EVENTS: TraditionalEventEntry[] = [
     id: "tsukimi",
     title: "中秋の名月",
     reading: "ちゅうしゅうのめいげつ",
+    displaySeason: "autumn",
     gregorianLabel: "新暦 旧暦八月十五夜に相当する日は年で移動（目安9〜10月）",
     lunarLabel: "旧暦 八月十五日（十五夜）",
     variability: "満月と完全一致しない年があります。",
@@ -176,6 +319,7 @@ export const TRADITIONAL_EVENTS: TraditionalEventEntry[] = [
     id: "choyo",
     title: "重陽の節句（菊の節句）",
     reading: "ちょうようのせっく",
+    displaySeason: "autumn",
     gregorianLabel: "新暦 9月9日",
     lunarLabel: "九月九日に移す旧俗の残る地域あり",
     variability: "菊花展・長寿祈願の日取りは施設によります。",
@@ -186,10 +330,25 @@ export const TRADITIONAL_EVENTS: TraditionalEventEntry[] = [
     openMonth: 9,
   },
   {
+    id: "ohigan_aki",
+    title: "秋の彼岸（中日の目安）",
+    reading: "あきのひがん",
+    displaySeason: "autumn",
+    gregorianLabel: "新暦 9月22日前後を中日とする所（秋分に寄せる）",
+    lunarLabel: "旧暦では年によりずれます",
+    variability: "秋分の日は年ごとに変わります。前三後七の寺もあります。",
+    explanation:
+      "秋分を中日とする供養の期間。おはぎ・ぼたもちを供えたり墓参りをする習慣が広く知られます。春彼岸とあわせて先祖供養の節目として捉えられることが多いです。",
+    highlightColor: "rgba(251,146,60,0.2)",
+    matchGregorian: [{ m: 9, d: 22 }, { m: 9, d: 23 }, { m: 9, d: 24 }],
+    openMonth: 9,
+  },
+  {
     id: "kanname",
-    title: "神嘗祭（参考：宮中祭祀）",
+    title: "神嘗祭・新嘗祭（参考）",
     reading: "かんなめさい・にいなめさい",
-    gregorianLabel: "新嘗祭：新暦 11月23日（国民の祝日に由来する行事文化）",
+    displaySeason: "autumn",
+    gregorianLabel: "新嘗祭の祝日文化：新暦 11月23日",
     lunarLabel: "神嘗祭は旧暦九月十七日説など諸説あり（公式行事は所管庁参照）",
     variability: "宮中祭祀と神社本庁系の祭日は別系統で整理してください。",
     explanation:
@@ -202,6 +361,7 @@ export const TRADITIONAL_EVENTS: TraditionalEventEntry[] = [
     id: "shichi",
     title: "七五三",
     reading: "しちごさん",
+    displaySeason: "autumn",
     gregorianLabel: "新暦 11月15日を中心に前後の良日に参詣",
     lunarLabel: "旧暦十五夜にあわせる地域も",
     variability: "3歳・5歳・7歳のどれをいつ祝うかは家ごとです。",
@@ -212,30 +372,32 @@ export const TRADITIONAL_EVENTS: TraditionalEventEntry[] = [
     openMonth: 11,
   },
   {
-    id: "setsubun",
-    title: "節分（豆まき・恵方巻）",
-    reading: "せつぶん",
-    gregorianLabel: "新暦 2月3日頃（立春の前日）",
-    lunarLabel: "立春前夜の祭祀に対応",
-    variability: "年によって2月2日となる場合があります。",
+    id: "toji",
+    title: "冬至（行事的目安）",
+    reading: "とうじ",
+    displaySeason: "winter",
+    gregorianLabel: "新暦 12月21日〜22日頃（天文計算）",
+    lunarLabel: "旧暦では十一月前後",
+    variability: "年ごとに日付がずれます。かぼちゃ・柚子湯の習慣は地域差大。",
     explanation:
-      "季節の変わり目の祓い。撒豆の「鬼は外福は内」は室町期の室礼に近い形で普及。恵方巻は近代以降の商俗が強い一方、方角信仰の楽しみとして定着しています。神社では節分祭で追儺の舞などがあります。",
-    highlightColor: "rgba(217,119,6,0.24)",
-    matchGregorian: [{ m: 2, d: 3 }, { m: 2, d: 2 }],
-    openMonth: 2,
+      "一年で夜が最も長いころ。陰極まって陽生ずるとして、厄除けに柚子湯に入る・かぼちゃを食べる俗があります（アプリの二十四節気表示の「冬至」と併せてご覧ください）。",
+    highlightColor: "rgba(14,116,144,0.24)",
+    matchGregorian: [{ m: 12, d: 21 }, { m: 12, d: 22 }],
+    openMonth: 12,
   },
   {
-    id: "oshogatsu",
-    title: "正月・年神様（参考）",
-    reading: "しょうがつ",
-    gregorianLabel: "新暦 1月1日〜3日（三が日）",
-    lunarLabel: "旧正月を祝う文化圏も国内にあります",
-    variability: "初詣の混雑ピーク・山車出しは宮ごとに一覧参照。",
+    id: "omisoka",
+    title: "大晦日",
+    reading: "おおみそか",
+    displaySeason: "winter",
+    gregorianLabel: "新暦 12月31日",
+    lunarLabel: "旧暦では年により十一月〜正月前後",
+    variability: "除夜の鐘の時刻・回数は寺により掲示あり。",
     explanation:
-      "年神を迎え歳徳神に祈る歳始。門松・注連縄で結界を示し鏡餅を供えるなど家ごとの作法があります。神社は歳旦祭・初詣で氏子縁を深める大繁忙期です。",
-    highlightColor: "rgba(185,28,28,0.18)",
-    matchGregorian: [{ m: 1, d: 1 }, { m: 1, d: 2 }, { m: 1, d: 3 }],
-    openMonth: 1,
+      "一年の最終日に家を掃き歳神を送り、除夜の鐘で煩悩を払う俗に結びつく夜。そばを食べる「年越し蕎麦」や神社の年越し参拝は近世以降に整った面があります。",
+    highlightColor: "rgba(55,48,163,0.22)",
+    matchGregorian: [{ m: 12, d: 31 }],
+    openMonth: 12,
   },
 ];
 

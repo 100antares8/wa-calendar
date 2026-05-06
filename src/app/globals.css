@@ -175,3 +175,21 @@ input[type="checkbox"] {
 a.wa-header-link:hover {
   background: rgba(30, 58, 95, 0.08);
 }
+
+@keyframes wa-guide-flash {
+  0%, 100% { box-shadow: inset 0 0 0 0 transparent; }
+  25% { box-shadow: inset 0 0 0 3px var(--indigo); }
+  50% { box-shadow: inset 0 0 0 1px rgba(30, 58, 95, 0.35); }
+  75% { box-shadow: inset 0 0 0 3px var(--indigo); }
+}
+.wa-guide-flash {
+  animation: wa-guide-flash 1.4s ease-out 2;
+  border-radius: 8px;
+}
+
+details.wa-learning-details > summary {
+  list-style: none;
+}
+details.wa-learning-details > summary::-webkit-details-marker {
+  display: none;
+}

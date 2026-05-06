@@ -1,11 +1,11 @@
 "use client";
 
-import type { CSSProperties } from "react";
+import { useEffect, type CSSProperties } from "react";
 import { getJstYmd, jstNoonUtc } from "@/lib/jst-date";
 import { getSekki, getCurrentSekki, getLunarDate } from "@/lib/japanese-calendar";
 import { getCurrentJunishiTime } from "@/lib/traditional-time";
-import { TRADITIONAL_EVENTS, traditionalEventsMatchingDay } from "@/lib/traditional-events-catalog";
-import { goToCalendarForEvent } from "@/lib/calendar-nav";
+import { traditionalEventsMatchingDay, getTraditionalEventsBySeason, type EventDisplaySeason } from "@/lib/traditional-events-catalog";
+import { goToCalendarForEvent, TAB_SYNC_EVENT } from "@/lib/calendar-nav";
 import SekkiPanel from "@/components/SekkiPanel";
 import { GuideRekiExplain, GuideJunishiExplain } from "@/components/GuidePanel";
 
@@ -25,6 +25,21 @@ const summaryStyle: CSSProperties = {
   listStyle: "none",
 };
 
+const SEASON_HEAD: Record<EventDisplaySeason, string> = {
+  spring: "春",
+  summer: "夏",
+  autumn: "秋",
+  winter: "冬",
+};
+
+function openLearningSection(sectionId: string) {
+  const d = document.getElementById(sectionId) as HTMLDetailsElement | null;
+  if (d) d.open = true;
+  requestAnimationFrame(() => {
+    d?.scrollIntoView({ behavior: "smooth", block: "start" });
+  });
+}
+
 export default function LearningGuidePanel() {
   const now = new Date();
   const j = getJstYmd(now);
@@ -34,12 +49,48 @@ export default function LearningGuidePanel() {
   const sekkiEntryToday = getSekki(noon);
   const currentSekki = getCurrentSekki(noon);
   const jn = getCurrentJunishiTime(now);
+  const groups = getTraditionalEventsBySeason();
 
-  const tocCell = (id: string, label: string, sub: string, active: boolean) => (
+  useEffect(() => {
+    let t: ReturnType<typeof setTimeout> | undefined;
+    const run = () => {
+      const raw = window.location.hash.replace(/^#/, "");
+      if (!raw) return;
+      const trad = document.getElementById("trad-events") as HTMLDetailsElement | null;
+      if (raw === "trad-events") {
+        if (trad) trad.open = true;
+        t = setTimeout(() => trad?.scrollIntoView({ behavior: "smooth", block: "start" }), 80);
+        return;
+      }
+      if (raw.startsWith("trad-event-")) {
+        if (trad) trad.open = true;
+        t = setTimeout(() => {
+          const el = document.getElementById(raw);
+          if (el) {
+            el.scrollIntoView({ behavior: "smooth", block: "center" });
+            el.classList.remove("wa-guide-flash");
+            void el.offsetWidth;
+            el.classList.add("wa-guide-flash");
+            window.setTimeout(() => el.classList.remove("wa-guide-flash"), 2400);
+          }
+        }, 100);
+      }
+    };
+    run();
+    window.addEventListener("hashchange", run);
+    window.addEventListener(TAB_SYNC_EVENT, run);
+    return () => {
+      window.removeEventListener("hashchange", run);
+      window.removeEventListener(TAB_SYNC_EVENT, run);
+      if (t) clearTimeout(t);
+    };
+  }, []);
+
+  const tocCell = (sectionId: string, label: string, sub: string, active: boolean) => (
     <button
       type="button"
-      key={id}
-      onClick={() => document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" })}
+      key={sectionId}
+      onClick={() => openLearningSection(sectionId)}
       style={{
         flex: "1 1 140px",
         textAlign: "left",
@@ -65,80 +116,111 @@ export default function LearningGuidePanel() {
         </p>
       </section>
 
-      <nav aria-label="目次" style={{ display: "flex", flexWrap: "wrap", gap: "0.5rem" }}>
-        {tocCell("trad-events", "行事・祭事", todayEvents.length ? `本日 ${todayEvents.length}件` : "本日の該当なし", todayEvents.length > 0)}
-        {tocCell(
-          "learn-sekki",
-          "二十四節気",
-          sekkiEntryToday ? `節入 ${sekkiEntryToday.kanji}` : `区間 ${currentSekki.kanji}`,
-          !!sekkiEntryToday,
-        )}
-        {tocCell(
-          "learn-reki",
-          "暦・六曜",
-          "旧暦・六曜の一覧",
-          todayEvents.length > 0 || !!sekkiEntryToday,
-        )}
-        {tocCell("learn-junishi", "十二支の刻", `いま ${jn.junishi}の刻`, true)}
-      </nav>
+      <details
+        className="wa-learning-details"
+        style={{ ...detailsStyle, marginBottom: "0.35rem" }}
+        id="learning-toc-wrap"
+      >
+        <summary style={{ ...summaryStyle, background: "rgba(30,58,95,0.06)" }}>
+          目次（タップで開閉・各章へジャンプ）
+        </summary>
+        <nav aria-label="目次" style={{ display: "flex", flexWrap: "wrap", gap: "0.5rem", padding: "0.55rem 0.65rem 0.75rem" }}>
+          {tocCell("trad-events", "行事・祭事", todayEvents.length ? `本日 ${todayEvents.length}件` : "本日の該当なし", todayEvents.length > 0)}
+          {tocCell(
+            "learn-sekki",
+            "二十四節気",
+            sekkiEntryToday ? `節入 ${sekkiEntryToday.kanji}` : `区間 ${currentSekki.kanji}`,
+            !!sekkiEntryToday,
+          )}
+          {tocCell(
+            "learn-reki",
+            "暦・六曜",
+            "旧暦・六曜の一覧",
+            todayEvents.length > 0 || !!sekkiEntryToday,
+          )}
+          {tocCell("learn-junishi", "十二支の刻", `いま ${jn.junishi}の刻`, true)}
+        </nav>
+      </details>
 
-      <details style={detailsStyle} id="trad-events" open>
+      <details className="wa-learning-details" style={detailsStyle} id="trad-events">
         <summary style={{ ...summaryStyle, background: todayEvents.length ? "rgba(30,58,95,0.08)" : undefined }}>
           日本古来の暦の行事・神社祭事・作法（ラインナップ）
         </summary>
         <div style={{ padding: "0.65rem 0.85rem 0.9rem", borderTop: "1px solid var(--border)", fontSize: "0.72rem", lineHeight: 1.55 }}>
           <p style={{ margin: "0 0 0.75rem", color: "var(--text2)" }}>
-            各行をタップすると「暦」の月表示へ移動し、該当日が色で示されます。連日や旧盆・新盆のように年や地域でずれるものは各行に注記があります。
+            各行をタップすると「暦」の月表示へ移動し、該当日が<strong>カタログの色</strong>で示されます。旧暦年ビューから来た場合も同じ色で強調します。
           </p>
-          <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: "0.65rem" }}>
-            {TRADITIONAL_EVENTS.map(ev => {
-              const isTodayRow = todayEvents.some(te => te.id === ev.id);
-              return (
-              <li key={ev.id}>
-                <button
-                  type="button"
-                  onClick={() => goToCalendarForEvent(ev.id, j.y)}
-                  style={{
-                    width: "100%",
-                    textAlign: "left",
-                    padding: "0.65rem 0.75rem",
-                    borderRadius: "8px",
-                    border: isTodayRow ? "2px solid var(--indigo)" : "1px solid var(--border)",
-                    borderLeft: isTodayRow ? "5px solid var(--indigo)" : undefined,
-                    background: isTodayRow ? "rgba(30,58,95,0.06)" : "var(--paper)",
-                    cursor: "pointer",
-                    fontFamily: "inherit",
-                  }}
-                >
-                  <div style={{ display: "flex", alignItems: "baseline", gap: "0.35rem", flexWrap: "wrap" }}>
-                    <span style={{ fontWeight: 700, fontSize: "0.85rem" }}>{ev.title}</span>
-                    {ev.reading && <span style={{ fontSize: "0.68rem", color: "var(--text2)" }}>（{ev.reading}）</span>}
-                  </div>
-                  <div style={{ marginTop: "0.35rem", fontSize: "0.7rem", color: "var(--text)" }}>
-                    <span style={{ fontWeight: 600 }}>新暦の目安：</span>
-                    {ev.gregorianLabel}
-                  </div>
-                  <div style={{ marginTop: "0.2rem", fontSize: "0.7rem", color: "var(--text)" }}>
-                    <span style={{ fontWeight: 600 }}>旧暦の目安：</span>
-                    {ev.lunarLabel}
-                  </div>
-                  {ev.variability && (
-                    <div style={{ marginTop: "0.35rem", fontSize: "0.66rem", color: "#b45309", lineHeight: 1.45 }}>
-                      ※ {ev.variability}
-                    </div>
-                  )}
-                  <p style={{ margin: "0.45rem 0 0", fontSize: "0.72rem", color: "var(--text2)", lineHeight: 1.5 }}>
-                    {ev.explanation}
-                  </p>
-                </button>
-              </li>
-            );
-            })}
-          </ul>
+          {groups.map(({ season, label, events }) => (
+            <section key={season} style={{ marginBottom: season === "winter" ? 0 : "1.15rem" }}>
+              <h3 style={{
+                fontSize: "0.88rem",
+                fontWeight: 700,
+                color: "var(--indigo)",
+                margin: "0 0 0.55rem",
+                letterSpacing: "0.12em",
+                borderBottom: "1px solid rgba(30,58,95,0.15)",
+                paddingBottom: "0.35rem",
+              }}>
+                {SEASON_HEAD[season]}（{label}）の行事
+              </h3>
+              <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: "0.65rem" }}>
+                {events.map(ev => {
+                  const isTodayRow = todayEvents.some(te => te.id === ev.id);
+                  return (
+                    <li
+                      key={ev.id}
+                      id={`trad-event-${ev.id}`}
+                      style={{ scrollMarginTop: "72px" }}
+                    >
+                      <button
+                        type="button"
+                        onClick={() => goToCalendarForEvent(ev.id, j.y)}
+                        style={{
+                          width: "100%",
+                          textAlign: "left",
+                          padding: "0.65rem 0.75rem",
+                          borderRadius: "8px",
+                          border: isTodayRow ? "2px solid var(--indigo)" : "1px solid var(--border)",
+                          boxShadow: isTodayRow
+                            ? "inset 4px 0 0 0 var(--indigo)"
+                            : `inset 4px 0 0 0 ${ev.highlightColor}`,
+                          background: isTodayRow ? "rgba(30,58,95,0.06)" : `linear-gradient(90deg, ${ev.highlightColor} 0%, var(--paper) 22%)`,
+                          cursor: "pointer",
+                          fontFamily: "inherit",
+                          boxSizing: "border-box",
+                        }}
+                      >
+                        <div style={{ display: "flex", alignItems: "baseline", gap: "0.35rem", flexWrap: "wrap" }}>
+                          <span style={{ fontWeight: 700, fontSize: "0.85rem" }}>{ev.title}</span>
+                          {ev.reading && <span style={{ fontSize: "0.68rem", color: "var(--text2)" }}>（{ev.reading}）</span>}
+                        </div>
+                        <div style={{ marginTop: "0.35rem", fontSize: "0.7rem", color: "var(--text)" }}>
+                          <span style={{ fontWeight: 600 }}>新暦の目安：</span>
+                          {ev.gregorianLabel}
+                        </div>
+                        <div style={{ marginTop: "0.2rem", fontSize: "0.7rem", color: "var(--text)" }}>
+                          <span style={{ fontWeight: 600 }}>旧暦の目安：</span>
+                          {ev.lunarLabel}
+                        </div>
+                        {ev.variability && (
+                          <div style={{ marginTop: "0.35rem", fontSize: "0.66rem", color: "#b45309", lineHeight: 1.45 }}>
+                            ※ {ev.variability}
+                          </div>
+                        )}
+                        <p style={{ margin: "0.45rem 0 0", fontSize: "0.72rem", color: "var(--text2)", lineHeight: 1.5 }}>
+                          {ev.explanation}
+                        </p>
+                      </button>
+                    </li>
+                  );
+                })}
+              </ul>
+            </section>
+          ))}
         </div>
       </details>
 
-      <details style={detailsStyle} id="learn-sekki">
+      <details className="wa-learning-details" style={detailsStyle} id="learn-sekki">
         <summary
           style={{
             ...summaryStyle,
@@ -152,14 +234,14 @@ export default function LearningGuidePanel() {
         </div>
       </details>
 
-      <details style={detailsStyle} id="learn-reki">
+      <details className="wa-learning-details" style={detailsStyle} id="learn-reki">
         <summary style={summaryStyle}>暦の解説（旧暦・二十四節気一覧・六曜）</summary>
         <div style={{ padding: "0.5rem 0.75rem 0.85rem", borderTop: "1px solid var(--border)" }}>
           <GuideRekiExplain embedded />
         </div>
       </details>
 
-      <details style={detailsStyle} id="learn-junishi">
+      <details className="wa-learning-details" style={detailsStyle} id="learn-junishi">
         <summary style={summaryStyle}>十二支の刻</summary>
         <div style={{ padding: "0.5rem 0.75rem 0.85rem", borderTop: "1px solid var(--border)" }}>
           <GuideJunishiExplain embedded />

@@ -5,7 +5,7 @@ import { getJstYmd, jstNoonUtc } from "@/lib/jst-date";
 import { getSeason } from "@/lib/japanese-calendar";
 import { getSekkiLineColors, getSekkiLineColorsToday } from "@/lib/sekki-colors";
 import { traditionalEventsMatchingDay, getEventById } from "@/lib/traditional-events-catalog";
-import { CAL_NAV_EVENT, readCalHighlight, clearCalHighlight, type CalHighlight } from "@/lib/calendar-nav";
+import { CAL_NAV_EVENT, readCalHighlight, clearCalHighlight, goToGuideTradEvent, type CalHighlight } from "@/lib/calendar-nav";
 
 interface DayData {
   day: number;
@@ -232,6 +232,7 @@ export default function MonthCalendar({
               const seasonBg = SEASON_COLORS[d.season] || "transparent";
               const fromGuide = dayMatchesGuideEvent(d);
               const guideTint = fromGuide && guideEvMeta?.highlightColor;
+              const dayEvents = traditionalEventsMatchingDay(year, month, d.day, d.lunar.lunarMonth, d.lunar.lunarDay);
               const sekCols = isToday
                 ? getSekkiLineColorsToday(d.currentSekki.longitude)
                 : getSekkiLineColors(d.currentSekki.longitude);
@@ -295,6 +296,32 @@ export default function MonthCalendar({
                   <div style={{ fontSize: tinyFs, color: d.rokuyo.color, fontWeight: 600 }}>
                     六曜 {d.rokuyo.name}
                   </div>
+                  {dayEvents.map(ev => (
+                    <button
+                      key={ev.id}
+                      type="button"
+                      onClick={e => { e.stopPropagation(); goToGuideTradEvent(ev.id); }}
+                      style={{
+                        fontSize: tinyFs,
+                        lineHeight: 1.25,
+                        textAlign: "left",
+                        width: "100%",
+                        border: "none",
+                        borderRadius: "3px",
+                        padding: "2px 4px",
+                        marginTop: "1px",
+                        background: ev.highlightColor,
+                        color: "var(--text)",
+                        cursor: "pointer",
+                        fontFamily: "inherit",
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                        whiteSpace: "nowrap",
+                      }}
+                    >
+                      {ev.title}
+                    </button>
+                  ))}
                   <div style={{ fontSize: tinyFs, color: isToday ? "#f0e6d3" : "var(--text)", lineHeight: 1.2 }}>
                     {d.moonPhase.emoji}{" "}
                     <span style={{ color: isToday ? "rgba(240,230,211,0.85)" : "var(--text2)", fontWeight: 400 }}>月齢{d.moonAge.toFixed(1)}</span>
@@ -354,6 +381,7 @@ export default function MonthCalendar({
                 節入日
               </span>
               <span>節気帯は色で四季区分（各マス）</span>
+              <span>色付きラベルは年中行事（タップで節気・同期の解説へ）</span>
             </div>
             <div style={{ fontSize: tinyFs, color: "var(--text2)", marginTop: "0.45rem" }}>
               カレンダー上を左右にスワイプすると前月・翌月に移動します（矢印ボタンでも操作可）。

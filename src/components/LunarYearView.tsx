@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { getJstYmd } from "@/lib/jst-date";
 import { traditionalEventsMatchingDay } from "@/lib/traditional-events-catalog";
-import { goToGuideTradEvents } from "@/lib/calendar-nav";
+import { goToGuideTradEvent } from "@/lib/calendar-nav";
 
 const WEEKDAYS = ["月", "火", "水", "木", "金", "土", "日"];
 
@@ -83,7 +83,7 @@ export default function LunarYearView() {
       <p style={{ fontSize: "0.72rem", color: "var(--text2)", lineHeight: 1.5, marginBottom: "0.85rem" }}>
         グレゴリオ暦の1年を走査し、各日の旧暦をまとめています。各旧暦月を、月曜始まりの週グリッドに載せています。
         枠の主表示は旧暦日名です。補足としてその日の格里暦を示します。閏月は本アルゴリズムでは未対応のため、実物の旧暦とずれる場合があります。
-        行事カタログに該当する日は、説明文字を出さず色だけで示し、タップで「節気・同期」の行事ラインナップへ移動します。
+        行事カタログに該当する日は、<strong>同じ色</strong>でマスを塗り、行事名を表示します。行事名をタップすると「節気・同期」で<strong>該当カードへスクロール</strong>し、短く光って示します。
       </p>
       <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "1rem", flexWrap: "wrap" }}>
         <label style={{ fontSize: "0.78rem", color: "var(--text2)" }}>西暦年:</label>
@@ -160,8 +160,8 @@ export default function LunarYearView() {
               <div
                 key={r ? `${r.gregorian.m}-${r.gregorian.d}-${idx}` : `blank-${idx}`}
                 style={{
-                  minHeight: "64px",
-                  padding: hasTrad ? "0" : "5px 4px",
+                  minHeight: hasTrad ? "auto" : "64px",
+                  padding: "4px",
                   borderRadius: "4px",
                   border: isTodayCell ? "2px solid var(--indigo)" : r ? "1px solid var(--border)" : "1px solid transparent",
                   background: isTodayCell
@@ -178,35 +178,41 @@ export default function LunarYearView() {
                   boxShadow: isTodayCell ? "0 0 0 1px rgba(30,58,95,0.08)" : undefined,
                 }}
               >
-                {r && hasTrad && (
-                  <button
-                    type="button"
-                    onClick={goToGuideTradEvents}
-                    title={evts.map(e => e.title).join("、")}
-                    aria-label={`行事あり: ${evts.map(e => e.title).join("、")}。節気・同期のラインナップへ`}
-                    style={{
-                      flex: 1,
-                      width: "100%",
-                      minHeight: "64px",
-                      border: "none",
-                      borderRadius: "4px",
-                      padding: 0,
-                      margin: 0,
-                      cursor: "pointer",
-                      background: "transparent",
-                    }}
-                  />
-                )}
-                {r && !hasTrad && (
+                {r && (
                   <>
                     <div style={{
-                      fontSize: "0.82rem", fontWeight: 600, lineHeight: 1.2,
+                      fontSize: "0.78rem", fontWeight: 600, lineHeight: 1.2,
                       fontFamily: "serif",
                       color: "var(--text)",
                     }}>{r.dayLabel}</div>
-                    <div style={{ fontSize: "0.58rem", color: "var(--text2)", lineHeight: 1.25 }}>
+                    <div style={{ fontSize: "0.55rem", color: "var(--text2)", lineHeight: 1.25 }}>
                       {toZenNum(r.gregorian.m)}月{toZenNum(r.gregorian.d)}日
                     </div>
+                    {hasTrad && evts.map(ev => (
+                      <button
+                        key={ev.id}
+                        type="button"
+                        onClick={() => goToGuideTradEvent(ev.id)}
+                        title={`${ev.title}の解説へ`}
+                        style={{
+                          fontSize: "0.58rem",
+                          lineHeight: 1.3,
+                          textAlign: "left",
+                          padding: "3px 4px",
+                          borderRadius: "4px",
+                          border: "1px solid rgba(0,0,0,0.1)",
+                          background: ev.highlightColor,
+                          color: "var(--text)",
+                          cursor: "pointer",
+                          fontFamily: "inherit",
+                          marginTop: "2px",
+                          width: "100%",
+                          display: "block",
+                        }}
+                      >
+                        {ev.title}
+                      </button>
+                    ))}
                   </>
                 )}
               </div>

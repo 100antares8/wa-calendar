@@ -31,7 +31,17 @@ export function goToCalendarForEvent(eventId: string, currentY: number): void {
   window.dispatchEvent(new CustomEvent(CAL_NAV_EVENT));
 }
 
-/** 旧暦年グリッドの色付きマスから：節気・同期の行事ラインナップへ */
+/** 旧暦年・暦カレンダーから：該当行事カードへ（同色のハイライト演出は学習パネル側） */
+export function goToGuideTradEvent(eventId: string): void {
+  if (typeof window === "undefined") return;
+  const url = new URL(window.location.href);
+  url.searchParams.set("tab", "guide-sync");
+  url.hash = `trad-event-${eventId}`;
+  window.history.pushState({}, "", url.toString());
+  window.dispatchEvent(new CustomEvent(TAB_SYNC_EVENT));
+}
+
+/** ラインナップ先頭へ（アンカーのみ） */
 export function goToGuideTradEvents(): void {
   if (typeof window === "undefined") return;
   const url = new URL(window.location.href);
