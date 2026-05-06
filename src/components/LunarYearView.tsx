@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { getJstYmd } from "@/lib/jst-date";
+import { traditionalEventsMatchingDay } from "@/lib/traditional-events-catalog";
+import { goToGuideTradEvents } from "@/lib/calendar-nav";
 
 const WEEKDAYS = ["月", "火", "水", "木", "金", "土", "日"];
 
@@ -81,6 +83,7 @@ export default function LunarYearView() {
       <p style={{ fontSize: "0.72rem", color: "var(--text2)", lineHeight: 1.5, marginBottom: "0.85rem" }}>
         グレゴリオ暦の1年を走査し、各日の旧暦をまとめています。各旧暦月を、月曜始まりの週グリッドに載せています。
         枠の主表示は旧暦日名です。補足としてその日の格里暦を示します。閏月は本アルゴリズムでは未対応のため、実物の旧暦とずれる場合があります。
+        行事カタログに該当する日は、説明文字を出さず色だけで示し、タップで「節気・同期」の行事ラインナップへ移動します。
       </p>
       <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "1rem", flexWrap: "wrap" }}>
         <label style={{ fontSize: "0.78rem", color: "var(--text2)" }}>西暦年:</label>
@@ -142,15 +145,32 @@ export default function LunarYearView() {
                 && r.gregorian.y === jstToday.y
                 && r.gregorian.m === jstToday.m
                 && r.gregorian.d === jstToday.d;
+              const evts = r
+                ? traditionalEventsMatchingDay(
+                  r.gregorian.y,
+                  r.gregorian.m,
+                  r.gregorian.d,
+                  r.lunarMonth,
+                  r.lunarDay,
+                )
+                : [];
+              const tint = evts[0]?.highlightColor;
+              const hasTrad = evts.length > 0;
               return (
               <div
                 key={r ? `${r.gregorian.m}-${r.gregorian.d}-${idx}` : `blank-${idx}`}
                 style={{
                   minHeight: "64px",
-                  padding: "5px 4px",
+                  padding: hasTrad ? "0" : "5px 4px",
                   borderRadius: "4px",
                   border: isTodayCell ? "2px solid var(--indigo)" : r ? "1px solid var(--border)" : "1px solid transparent",
-                  background: isTodayCell ? "rgba(30,58,95,0.14)" : r ? "var(--paper)" : "transparent",
+                  background: isTodayCell
+                    ? "rgba(30,58,95,0.14)"
+                    : hasTrad && tint
+                      ? tint
+                      : r
+                        ? "var(--paper)"
+                        : "transparent",
                   display: "flex",
                   flexDirection: "column",
                   justifyContent: "flex-start",
@@ -158,7 +178,26 @@ export default function LunarYearView() {
                   boxShadow: isTodayCell ? "0 0 0 1px rgba(30,58,95,0.08)" : undefined,
                 }}
               >
-                {r && (
+                {r && hasTrad && (
+                  <button
+                    type="button"
+                    onClick={goToGuideTradEvents}
+                    title={evts.map(e => e.title).join("、")}
+                    aria-label={`行事あり: ${evts.map(e => e.title).join("、")}。節気・同期のラインナップへ`}
+                    style={{
+                      flex: 1,
+                      width: "100%",
+                      minHeight: "64px",
+                      border: "none",
+                      borderRadius: "4px",
+                      padding: 0,
+                      margin: 0,
+                      cursor: "pointer",
+                      background: "transparent",
+                    }}
+                  />
+                )}
+                {r && !hasTrad && (
                   <>
                     <div style={{
                       fontSize: "0.82rem", fontWeight: 600, lineHeight: 1.2,

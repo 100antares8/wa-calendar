@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, ReactNode, type CSSProperties } from "react";
+import { CAL_NAV_EVENT, TAB_SYNC_EVENT } from "@/lib/calendar-nav";
 
 const TAB_IDS = ["today", "clock", "calendar", "kigo", "guide-sync", "lunar-year"] as const;
 
@@ -46,6 +47,32 @@ export default function TabLayout({
 }: Props) {
   const [activeTab, setActiveTab] = useState(() => normalizeTabFromQuery(initialTab));
   const [isIpad, setIsIpad]       = useState(false);
+
+  useEffect(() => {
+    const syncFromUrl = () => {
+      const params = new URLSearchParams(window.location.search);
+      const normalized = normalizeTabFromQuery(params.get("tab") ?? initialTab);
+      if (TABS.some(t => t.id === normalized)) setActiveTab(normalized);
+      const hash = window.location.hash.replace(/^#/, "");
+      if (hash) {
+        window.setTimeout(() => {
+          document.getElementById(hash)?.scrollIntoView({ behavior: "smooth", block: "start" });
+        }, 120);
+      }
+    };
+    window.addEventListener("popstate", syncFromUrl);
+    window.addEventListener(TAB_SYNC_EVENT, syncFromUrl);
+    return () => {
+      window.removeEventListener("popstate", syncFromUrl);
+      window.removeEventListener(TAB_SYNC_EVENT, syncFromUrl);
+    };
+  }, [initialTab]);
+
+  useEffect(() => {
+    const goCal = () => setActiveTab("calendar");
+    window.addEventListener(CAL_NAV_EVENT, goCal);
+    return () => window.removeEventListener(CAL_NAV_EVENT, goCal);
+  }, []);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);

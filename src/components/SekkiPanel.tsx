@@ -1,6 +1,7 @@
 "use client";
 
-import { SEKKI_24, KOFU_72, getCurrentSekki } from "@/lib/japanese-calendar";
+import { getJstYmd, jstNoonUtc } from "@/lib/jst-date";
+import { SEKKI_24, KOFU_72, SEKKI_MEANINGS, getCurrentSekki, getSekki } from "@/lib/japanese-calendar";
 
 const SEASON_STYLE: Record<string, { bg: string; text: string; border: string }> = {
   "春": { bg: "#fce7f3", text: "#9d174d", border: "#fbcfe8" },
@@ -18,7 +19,10 @@ function sekkiToSeason(longitude: number): string {
 }
 
 export default function SekkiPanel() {
-  const current = getCurrentSekki(new Date());
+  const now = new Date();
+  const jst = getJstYmd(now);
+  const entryToday = getSekki(jstNoonUtc(jst));
+  const current = getCurrentSekki(now);
   const seasons = ["春", "夏", "秋", "冬"];
   const seasonGroups: Record<string, typeof SEKKI_24> = { "春": [], "夏": [], "秋": [], "冬": [] };
   // 春から順に並べる
@@ -54,6 +58,7 @@ export default function SekkiPanel() {
             <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: "0" }}>
               {seasonGroups[season].map((s, i) => {
                 const isCurrent = s.longitude === current.longitude;
+                const isEntryToday = entryToday?.name === s.name;
                 const kos = KOFU_72.filter(k => k.sekki === s.name);
                 return (
                   <div key={s.name} style={{
@@ -61,14 +66,27 @@ export default function SekkiPanel() {
                     borderBottom: i < seasonGroups[season].length - 2 ? `1px solid ${style.border}` : "none",
                     borderRight: i % 2 === 0 ? `1px solid ${style.border}` : "none",
                     background: isCurrent ? style.bg : "transparent",
+                    outline: isEntryToday ? `2px solid ${style.text}` : undefined,
+                    outlineOffset: isEntryToday ? "-1px" : undefined,
                   }}>
-                    <div style={{ display: "flex", alignItems: "baseline", gap: "0.4rem" }}>
-                      {isCurrent && <span style={{ fontSize: "0.6rem", background: style.text, color: "#fff", borderRadius: "2px", padding: "1px 4px" }}>現在</span>}
+                    <div style={{ display: "flex", alignItems: "baseline", gap: "0.4rem", flexWrap: "wrap" }}>
+                      {isCurrent && <span style={{ fontSize: "0.6rem", background: style.text, color: "#fff", borderRadius: "2px", padding: "1px 4px" }}>現在区間</span>}
+                      {isEntryToday && <span style={{ fontSize: "0.6rem", background: "#b45309", color: "#fff", borderRadius: "2px", padding: "1px 4px" }}>本日節入</span>}
                       <span style={{ fontSize: "1rem", fontWeight: isCurrent ? "700" : "400", color: isCurrent ? style.text : "var(--text)" }}>
                         {s.kanji}
                       </span>
                       <span style={{ fontSize: "0.7rem", color: "var(--text2)" }}>{s.reading}</span>
                     </div>
+                    {SEKKI_MEANINGS[s.name] && (
+                      <p style={{
+                        margin: "0.2rem 0 0",
+                        fontSize: "0.62rem",
+                        color: "var(--text2)",
+                        lineHeight: 1.45,
+                      }}>
+                        {SEKKI_MEANINGS[s.name]}
+                      </p>
+                    )}
                     {kos.length > 0 && (
                       <div style={{ marginTop: "0.2rem" }}>
                         {kos.map(k => (

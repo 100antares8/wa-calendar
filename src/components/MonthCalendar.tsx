@@ -4,6 +4,8 @@ import { useState, useEffect, useRef, type TouchEvent } from "react";
 import { getJstYmd, jstNoonUtc } from "@/lib/jst-date";
 import { getSeason } from "@/lib/japanese-calendar";
 import { getSekkiLineColors, getSekkiLineColorsToday } from "@/lib/sekki-colors";
+import { traditionalEventsMatchingDay, getEventById } from "@/lib/traditional-events-catalog";
+import { CAL_NAV_EVENT, readCalHighlight, clearCalHighlight, type CalHighlight } from "@/lib/calendar-nav";
 
 interface DayData {
   day: number;
@@ -56,8 +58,23 @@ export default function MonthCalendar({
   const [loading, setLoading] = useState(false);
   const [wide, setWide] = useState(false);
   const touchStart = useRef<{ x: number; y: number } | null>(null);
+  const [eventFromGuide, setEventFromGuide] = useState<CalHighlight | null>(null);
 
   const monthSeason = getSeason(jstNoonUtc({ y: year, m: month, d: 15 }));
+
+  useEffect(() => {
+    const onNav = () => {
+      const h = readCalHighlight();
+      if (h) {
+        setYear(h.y);
+        setMonth(h.m);
+        setEventFromGuide(h);
+      }
+    };
+    window.addEventListener(CAL_NAV_EVENT, onNav);
+    onNav();
+    return () => window.removeEventListener(CAL_NAV_EVENT, onNav);
+  }, []);
 
   useEffect(() => {
     const mq = window.matchMedia("(min-width: 880px)");
@@ -76,10 +93,14 @@ export default function MonthCalendar({
   }, [year, month]);
 
   const prevMonth = () => {
+    clearCalHighlight();
+    setEventFromGuide(null);
     if (month === 1) { setYear(y => y - 1); setMonth(12); }
     else setMonth(m => m - 1);
   };
   const nextMonth = () => {
+    clearCalHighlight();
+    setEventFromGuide(null);
     if (month === 12) { setYear(y => y + 1); setMonth(1); }
     else setMonth(m => m + 1);
   };
@@ -105,6 +126,13 @@ export default function MonthCalendar({
   const WEEKDAYS = ["月", "火", "水", "木", "金", "土", "日"];
 
   const jstToday = getJstYmd(new Date());
+  const guideEvMeta = eventFromGuide ? getEventById(eventFromGuide.eventId) : undefined;
+  const dayMatchesGuideEvent = (d: DayData) => {
+    if (!eventFromGuide || eventFromGuide.y !== year || eventFromGuide.m !== month) return false;
+    return traditionalEventsMatchingDay(year, month, d.day, d.lunar.lunarMonth, d.lunar.lunarDay).some(
+      e => e.id === eventFromGuide.eventId,
+    );
+  };
   const cellMinH = comfortable && wide ? 128 : wide ? 112 : 96;
   const gridGap = comfortable ? 4 : 3;
   const titleFs = comfortable ? "1.45rem" : "1.25rem";
@@ -202,6 +230,8 @@ export default function MonthCalendar({
               const isSun = weekdayIdxMon0 === 6;
               const isSat = weekdayIdxMon0 === 5;
               const seasonBg = SEASON_COLORS[d.season] || "transparent";
+              const fromGuide = dayMatchesGuideEvent(d);
+              const guideTint = fromGuide && guideEvMeta?.highlightColor;
               const sekCols = isToday
                 ? getSekkiLineColorsToday(d.currentSekki.longitude)
                 : getSekkiLineColors(d.currentSekki.longitude);
@@ -210,8 +240,10 @@ export default function MonthCalendar({
                 <div key={d.day} style={{
                   minHeight: `${cellMinH}px`, padding: "4px",
                   background: isToday ? "var(--indigo)" : seasonBg,
+                  backgroundImage: !isToday && guideTint ? `linear-gradient(${guideTint}, ${guideTint})` : undefined,
                   borderRadius: "4px",
                   border: isToday ? "none" : "1px solid rgba(0,0,0,0.06)",
+                  outline: fromGuide && !isToday ? "2px solid rgba(30,58,95,0.4)" : undefined,
                   position: "relative",
                   display: "flex",
                   flexDirection: "column",
@@ -326,6 +358,11 @@ export default function MonthCalendar({
             <div style={{ fontSize: tinyFs, color: "var(--text2)", marginTop: "0.45rem" }}>
               カレンダー上を左右にスワイプすると前月・翌月に移動します（矢印ボタンでも操作可）。
             </div>
+            {guideEvMeta && (
+              <div style={{ fontSize: tinyFs, color: "var(--indigo)", marginTop: "0.5rem", lineHeight: 1.45 }}>
+                「節気・同期」から選んだ行事の該当日を色と枠で示しています（{guideEvMeta.title}）。月を変えるとハイライトは解除されます。
+              </div>
+            )}
           </div>
         </>
       )}

@@ -10,6 +10,8 @@ import { getJstYmd, getJstClock, getJstDecimalHour, jstNoonUtc } from "@/lib/jst
 export interface JunishiTime {
   junishi: string;
   reading: string;
+  /** 用語の意味（学習用の短文） */
+  gloss: string;
   animal: string;
   start: number; // 時（0-23）
   end: number;
@@ -18,18 +20,18 @@ export interface JunishiTime {
 }
 
 export const JUNISHI_TIMES: JunishiTime[] = [
-  { junishi: "子", reading: "ね",   animal: "鼠", start: 23, end:  1, period: "夜半",   color: "#1e3a5f" },
-  { junishi: "丑", reading: "うし", animal: "牛", start:  1, end:  3, period: "鶏鳴",   color: "#2d4a7a" },
-  { junishi: "寅", reading: "とら", animal: "虎", start:  3, end:  5, period: "平旦",   color: "#3d5a8a" },
-  { junishi: "卯", reading: "う",   animal: "兔", start:  5, end:  7, period: "日出",   color: "#f97316" },
-  { junishi: "辰", reading: "たつ", animal: "龍", start:  7, end:  9, period: "食時",   color: "#eab308" },
-  { junishi: "巳", reading: "み",   animal: "蛇", start:  9, end: 11, period: "隅中",   color: "#84cc16" },
-  { junishi: "午", reading: "うま", animal: "馬", start: 11, end: 13, period: "日中",   color: "#ef4444" },
-  { junishi: "未", reading: "ひつじ", animal: "羊", start: 13, end: 15, period: "日昳",   color: "#f59e0b" },
-  { junishi: "申", reading: "さる", animal: "猿", start: 15, end: 17, period: "哺時",   color: "#10b981" },
-  { junishi: "酉", reading: "とり", animal: "鶏", start: 17, end: 19, period: "日入",   color: "#8b5cf6" },
-  { junishi: "戌", reading: "いぬ", animal: "犬", start: 19, end: 21, period: "黄昏",   color: "#6366f1" },
-  { junishi: "亥", reading: "い",   animal: "猪", start: 21, end: 23, period: "人定",   color: "#3730a3" },
+  { junishi: "子", reading: "ね", gloss: "十二支の第一。真夜中から明け方前で一昼夜のはじまりとされる。", animal: "鼠", start: 23, end:  1, period: "夜半",   color: "#1e3a5f" },
+  { junishi: "丑", reading: "うし", gloss: "夜が明け、牛が起きるころの刻。", animal: "牛", start:  1, end:  3, period: "鶏鳴",   color: "#2d4a7a" },
+  { junishi: "寅", reading: "とら", gloss: "夜深いが東が白みはじめるころ。", animal: "虎", start:  3, end:  5, period: "平旦",   color: "#3d5a8a" },
+  { junishi: "卯", reading: "う", gloss: "太陽が昇るころ。この刻をはさむ2時間帯を「卯刻」とも。", animal: "兔", start:  5, end:  7, period: "日出",   color: "#f97316" },
+  { junishi: "辰", reading: "たつ", gloss: "朝食のころ。仕事に出る前の時間帯。", animal: "龍", start:  7, end:  9, period: "食時",   color: "#eab308" },
+  { junishi: "巳", reading: "み", gloss: "日が傾く前のころ。昼の中ほど。", animal: "蛇", start:  9, end: 11, period: "隅中",   color: "#84cc16" },
+  { junishi: "午", reading: "うま", gloss: "正午に近いで最も日が高い帯。", animal: "馬", start: 11, end: 13, period: "日中",   color: "#ef4444" },
+  { junishi: "未", reading: "ひつじ", gloss: "昼を過ぎて日が西に傾きはじめるころ。", animal: "羊", start: 13, end: 15, period: "日昳",   color: "#f59e0b" },
+  { junishi: "申", reading: "さる", gloss: "夕方手前。世話事をすませる時間のイメージ。", animal: "猿", start: 15, end: 17, period: "哺時",   color: "#10b981" },
+  { junishi: "酉", reading: "とり", gloss: "日が沈みはじめるころ。帰宅・仕舞いの時間。", animal: "鶏", start: 17, end: 19, period: "日入",   color: "#8b5cf6" },
+  { junishi: "戌", reading: "いぬ", gloss: "夕暮れから夜へ。灯りをともすころのイメージ。", animal: "犬", start: 19, end: 21, period: "黄昏",   color: "#6366f1" },
+  { junishi: "亥", reading: "い", gloss: "人々が寝静まる夜深いころ一日の終りに近い。", animal: "猪", start: 21, end: 23, period: "人定",   color: "#3730a3" },
 ];
 
 export function getCurrentJunishiTime(date: Date): JunishiTime & { koku: number; subKoku: string } {
