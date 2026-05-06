@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useMemo } from "react";
 import MoonSvg from "./MoonSvg";
-import { getDailySeasonalBundle } from "@/lib/daily-seasonal-wisdom";
+import { getSeasonalCustomsForToday } from "@/lib/seasonal-customs";
 
 interface TodayData {
   now: string;
@@ -71,35 +71,54 @@ function useTodayData() {
   return { data, error };
 }
 
-function TodayFeatured({ jst, comfortable = false }: { jst: { y: number; m: number; d: number }; comfortable?: boolean }) {
-  const bundle = useMemo(() => getDailySeasonalBundle(jst), [jst.y, jst.m, jst.d]);
-  const f = bundle.featured;
-  const kindLabel =
-    bundle.featuredKind === "proverb" ? "ことわざ・熟語"
-    : bundle.featuredKind === "figure" ? "先人の一句"
-    : bundle.featuredKind === "tea" ? "茶の言葉"
-    : "自然の一句";
+function TodaySeasonalHighlights({
+  jst,
+  lunar,
+  todaySekkiKanji,
+  comfortable = false,
+}: {
+  jst: { y: number; m: number; d: number };
+  lunar: { lunarMonth: number; lunarDay: number };
+  todaySekkiKanji?: string | null;
+  comfortable?: boolean;
+}) {
+  const items = useMemo(
+    () => getSeasonalCustomsForToday(jst, lunar, todaySekkiKanji),
+    [jst.y, jst.m, jst.d, lunar.lunarMonth, lunar.lunarDay, todaySekkiKanji],
+  );
 
-  const pad = comfortable ? "0.75rem 1rem" : "0.55rem 0.75rem";
-  const fsLabel = comfortable ? "0.75rem" : "0.62rem";
-  const fsMain = comfortable ? "1.05rem" : "0.88rem";
-  const fsSub = comfortable ? "0.82rem" : "0.72rem";
-  const borderW = comfortable ? 5 : 4;
+  if (!items.length) return null;
+
+  const pad = comfortable ? "0.65rem 0.85rem" : "0.5rem 0.65rem";
+  const fsTitle = comfortable ? "0.95rem" : "0.84rem";
+  const fsSub = comfortable ? "0.78rem" : "0.68rem";
+  const gap = comfortable ? "0.45rem" : "0.35rem";
 
   return (
-    <div className="wa-card fade-in" style={{
-      padding: pad,
-      borderLeft: `${borderW}px solid var(--indigo)`,
-      background: "rgba(30,58,95,0.05)",
-    }}>
-      <div style={{ fontSize: fsLabel, color: "var(--text2)", letterSpacing: "0.1em", marginBottom: comfortable ? "0.35rem" : "0.25rem" }}>
-        今日の季語 · {kindLabel}
-      </div>
-      <p style={{ fontSize: fsMain, fontWeight: 600, lineHeight: 1.45, margin: "0 0 0.3rem" }}>{f.text}</p>
-      {f.attribution && (
-        <div style={{ fontSize: fsSub, color: "var(--text2)", marginBottom: "0.3rem" }}>— {f.attribution}</div>
-      )}
-      <p style={{ fontSize: fsSub, color: "var(--text2)", lineHeight: 1.55, margin: 0 }}>{f.note}</p>
+    <div style={{ display: "flex", flexDirection: "column", gap }}>
+      {items.map(it => (
+        <div
+          key={it.title}
+          className="wa-card fade-in"
+          style={{
+            padding: pad,
+            background: it.background,
+            color: it.color,
+            border: it.border,
+            boxShadow: "0 1px 2px rgba(0,0,0,0.06)",
+          }}
+        >
+          <div style={{ fontSize: comfortable ? "0.65rem" : "0.58rem", opacity: 0.85, letterSpacing: "0.14em", marginBottom: "0.2rem" }}>
+            暦・年中行事（今日）
+          </div>
+          <div style={{ fontSize: fsTitle, fontWeight: 700, lineHeight: 1.35, marginBottom: it.subtitle ? "0.25rem" : 0 }}>
+            {it.title}
+          </div>
+          {it.subtitle && (
+            <div style={{ fontSize: fsSub, lineHeight: 1.5, opacity: 0.92 }}>{it.subtitle}</div>
+          )}
+        </div>
+      ))}
     </div>
   );
 }
@@ -125,7 +144,12 @@ export default function TodayPanel({ compact = false, comfortable = false }: { c
 
     return (
       <div style={{ display: "flex", flexDirection: "column", gap: g }}>
-        <TodayFeatured jst={jst} comfortable={comfortable} />
+        <TodaySeasonalHighlights
+          jst={jst}
+          lunar={{ lunarMonth: data.lunar.lunarMonth, lunarDay: data.lunar.lunarDay }}
+          todaySekkiKanji={data.todaySekki?.kanji}
+          comfortable={comfortable}
+        />
 
         {data.todaySekki && (
           <div style={{
@@ -212,7 +236,11 @@ export default function TodayPanel({ compact = false, comfortable = false }: { c
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
 
-      <TodayFeatured jst={jst} />
+      <TodaySeasonalHighlights
+        jst={jst}
+        lunar={{ lunarMonth: data.lunar.lunarMonth, lunarDay: data.lunar.lunarDay }}
+        todaySekkiKanji={data.todaySekki?.kanji}
+      />
 
       {data.todaySekki && (
         <div style={{

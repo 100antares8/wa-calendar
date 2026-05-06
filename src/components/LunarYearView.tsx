@@ -26,6 +26,7 @@ interface Payload {
 
 export default function LunarYearView() {
   const j0 = getJstYmd(new Date());
+  const jstToday = j0;
   const [year, setYear] = useState(j0.y);
   const [data, setData] = useState<Payload | null>(null);
   const [loading, setLoading] = useState(false);
@@ -136,19 +137,25 @@ export default function LunarYearView() {
                 fontSize: "0.62rem",
               }}>{w}</div>
             ))}
-            {cells.map((r, idx) => (
+            {cells.map((r, idx) => {
+              const isTodayCell = r != null
+                && r.gregorian.y === jstToday.y
+                && r.gregorian.m === jstToday.m
+                && r.gregorian.d === jstToday.d;
+              return (
               <div
                 key={r ? `${r.gregorian.m}-${r.gregorian.d}-${idx}` : `blank-${idx}`}
                 style={{
                   minHeight: "64px",
                   padding: "5px 4px",
                   borderRadius: "4px",
-                  border: r ? "1px solid var(--border)" : "1px solid transparent",
-                  background: r ? "var(--paper)" : "transparent",
+                  border: isTodayCell ? "2px solid var(--indigo)" : r ? "1px solid var(--border)" : "1px solid transparent",
+                  background: isTodayCell ? "rgba(30,58,95,0.14)" : r ? "var(--paper)" : "transparent",
                   display: "flex",
                   flexDirection: "column",
                   justifyContent: "flex-start",
                   gap: "3px",
+                  boxShadow: isTodayCell ? "0 0 0 1px rgba(30,58,95,0.08)" : undefined,
                 }}
               >
                 {r && (
@@ -164,7 +171,8 @@ export default function LunarYearView() {
                   </>
                 )}
               </div>
-            ))}
+            );
+            })}
           </div>
         </section>
         );

@@ -111,6 +111,7 @@ export default function MonthCalendar({
   const subtitleFs = comfortable ? "0.76rem" : "0.68rem";
   const weekHdrFs = comfortable ? "0.72rem" : "0.65rem";
   const dayNumFs = comfortable ? "0.82rem" : "0.74rem";
+  const lunarDayFs = `calc(${dayNumFs} + 0.06rem)`;
   const sekkiFs = comfortable ? "0.55rem" : "0.5rem";
   const tinyFs = comfortable ? "0.5rem" : "0.46rem";
   const navBtnPad = comfortable ? "0.35rem 0.85rem" : "0.25rem 0.75rem";
@@ -222,15 +223,15 @@ export default function MonthCalendar({
                     gap: "4px", flexWrap: "wrap",
                   }}>
                     <span style={{
-                      fontSize: `calc(${dayNumFs} + 0.06rem)`, fontWeight: isToday ? "700" : "650",
+                      fontSize: lunarDayFs, fontWeight: isToday ? "700" : "600",
                       color: isToday ? "#f0e6d3" : isSun ? "#c0392b" : isSat ? "#1e3a5f" : "var(--text)",
                       letterSpacing: "0.02em",
                     }}>
                       {d.lunar.dayLabel}
                     </span>
                     <span style={{
-                      fontSize: tinyFs, fontWeight: 500,
-                      color: isToday ? "rgba(240,230,211,0.9)" : "var(--text2)",
+                      fontSize: lunarDayFs, fontWeight: isToday ? "700" : "600",
+                      color: isToday ? "rgba(240,230,211,0.95)" : "var(--text2)",
                       flexShrink: 0,
                     }}>
                       新{toZenNum(d.day)}日

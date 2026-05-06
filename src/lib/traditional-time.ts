@@ -51,6 +51,20 @@ export function getCurrentJunishiTime(date: Date): JunishiTime & { koku: number;
   return { ...JUNISHI_TIMES[0], koku: 1, subKoku: "一ノ刻" };
 }
 
+/** 和時計盤：上向きの指に合わせて十二支リングが回るときの SVG 回転角（度・時計回りが正） */
+export function getJunishiDiskRotationDegrees(date: Date): number {
+  const jt = getCurrentJunishiTime(date);
+  const { hour: h, minute: min } = getJstClock(date);
+  const idxRaw = JUNISHI_TIMES.findIndex(x => x.junishi === jt.junishi);
+  const idx = idxRaw >= 0 ? idxRaw : 0;
+  const def = JUNISHI_TIMES[idx];
+  const minFromStart = def.start === 23
+    ? h >= 23 ? (h - 23) * 60 + min : (h + 1) * 60 + min
+    : (h - def.start) * 60 + min;
+  const frac = Math.min(1, Math.max(0, minFromStart / 120));
+  return -(idx + frac) * 30;
+}
+
 // ---- 不定時法（江戸時代の時刻体系） ----------------------------------------
 export interface FuteijiTime {
   name: string;

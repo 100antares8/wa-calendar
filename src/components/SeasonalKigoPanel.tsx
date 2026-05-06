@@ -9,6 +9,15 @@ const STORAGE_KEY = "wa-calendar-kigo-saved-v1";
 
 type KigoKind = "proverb" | "figure" | "tea" | "nature";
 
+const KIND_LABELS: Record<KigoKind, string> = {
+  proverb: "季節暦のことわざ・熟語",
+  figure: "先人の言葉・俳句趣",
+  tea: "茶・茶湯に関する言葉",
+  nature: "自然の一句",
+};
+
+const KIND_ORDER: Record<KigoKind, number> = { proverb: 0, figure: 1, tea: 2, nature: 3 };
+
 const blockStyle: CSSProperties = {
   border: "1px solid var(--border)",
   borderRadius: "8px",
@@ -74,9 +83,16 @@ function LineBlock({
   return (
     <section style={blockStyle} className="fade-in">
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "0.5rem" }}>
-        <div style={{ minWidth: 0 }}>
-          <div style={{ fontSize: "0.68rem", color: "var(--indigo)", fontWeight: 700, letterSpacing: "0.08em" }}>{title}</div>
-          <div style={{ fontSize: "0.62rem", color: "var(--text2)", marginBottom: "0.35rem" }}>{sub}</div>
+        <div style={{ minWidth: 0, display: "flex", gap: "0.35rem", alignItems: "flex-start" }}>
+          {saved && (
+            <span style={{ fontSize: "1rem", lineHeight: 1.2, flexShrink: 0 }} title="保存済み" aria-hidden>
+              🔖
+            </span>
+          )}
+          <div>
+            <div style={{ fontSize: "0.68rem", color: "var(--indigo)", fontWeight: 700, letterSpacing: "0.08em" }}>{title}</div>
+            <div style={{ fontSize: "0.62rem", color: "var(--text2)", marginBottom: "0.35rem" }}>{sub}</div>
+          </div>
         </div>
         <label
           style={{
@@ -110,6 +126,33 @@ function LineBlock({
 export default function SeasonalKigoPanel() {
   const [viewDate, setViewDate] = useState(() => getJstYmd(new Date()));
   const [saved, setSaved] = useState<Set<string>>(() => loadSavedSet());
+  const [savedListOpen, setSavedListOpen] = useState(false);
+
+  const savedChronological = useMemo(() => {
+    type Row = { y: number; m: number; d: number; kind: KigoKind; heading: string; text: string };
+    const rows: Row[] = [];
+    for (const key of Array.from(saved)) {
+      const p = parseKey(key);
+      if (!p) continue;
+      const b = getDailySeasonalBundle({ y: p.y, m: p.m, d: p.d });
+      const line = b[p.kind];
+      rows.push({
+        y: p.y,
+        m: p.m,
+        d: p.d,
+        kind: p.kind,
+        heading: KIND_LABELS[p.kind],
+        text: line.text,
+      });
+    }
+    rows.sort((a, b) =>
+      a.y !== b.y ? a.y - b.y
+        : a.m !== b.m ? a.m - b.m
+          : a.d !== b.d ? a.d - b.d
+            : KIND_ORDER[a.kind] - KIND_ORDER[b.kind],
+    );
+    return rows;
+  }, [saved]);
 
   const bundle = useMemo(() => getDailySeasonalBundle(viewDate), [viewDate.y, viewDate.m, viewDate.d]);
 
@@ -208,8 +251,76 @@ export default function SeasonalKigoPanel() {
             }}
           />
         </label>
+        <button
+          type="button"
+          onClick={() => setSavedListOpen(o => !o)}
+          style={{
+            flex: "1 1 100%",
+            marginTop: "0.15rem",
+            border: "1px solid var(--indigo)",
+            borderRadius: "6px",
+            padding: "0.4rem 0.65rem",
+            background: savedListOpen ? "rgba(30,58,95,0.12)" : "var(--paper)",
+            color: "var(--indigo)",
+            cursor: "pointer",
+            fontSize: "0.76rem",
+            fontWeight: 600,
+          }}
+        >
+          🔖 {savedListOpen ? "保存一覧を閉じる" : "保存を日付順に表示"}
+          {saved.size > 0 ? `（${saved.size}件）` : ""}
+        </button>
       </div>
 
+      {savedListOpen && (
+        <div
+          style={{
+            border: "1px solid var(--border)",
+            borderRadius: "8px",
+            padding: "0.65rem 0.75rem",
+            background: "rgba(255,255,255,0.55)",
+            maxHeight: "min(60vh, 420px)",
+            overflowY: "auto",
+          }}
+        >
+          <div style={{ fontSize: "0.78rem", fontWeight: 700, color: "var(--text)", marginBottom: "0.5rem" }}>
+            保存した季語・名話（日付の古い順）
+          </div>
+          {savedChronological.length === 0 ? (
+            <p style={{ fontSize: "0.74rem", color: "var(--text2)", margin: 0 }}>
+              まだありません。気に入ったカードの「保存」にチェックを入れると、ここに蓄積されます。
+            </p>
+          ) : (
+            <ol style={{ margin: 0, paddingLeft: "1.05rem", display: "flex", flexDirection: "column", gap: "0.75rem" }}>
+              {savedChronological.map((row, i) => (
+                <li key={`${row.y}-${row.m}-${row.d}-${row.kind}-${i}`} style={{ fontSize: "0.74rem", color: "var(--text)" }}>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setViewDate({ y: row.y, m: row.m, d: row.d });
+                      setSavedListOpen(false);
+                    }}
+                    style={{
+                      border: "none",
+                      background: "none",
+                      padding: 0,
+                      cursor: "pointer",
+                      color: "var(--indigo)",
+                      fontWeight: 600,
+                      textAlign: "left",
+                      textDecoration: "underline",
+                      fontSize: "0.74rem",
+                    }}
+                  >
+                    {formatJstHeading({ y: row.y, m: row.m, d: row.d })} — {row.heading}
+                  </button>
+                  <div style={{ color: "var(--text2)", marginTop: "0.25rem", lineHeight: 1.5 }}>{row.text}</div>
+                </li>
+              ))}
+            </ol>
+          )}
+        </div>
+      )}
       {savedDates.length > 0 && (
         <div style={{ fontSize: "0.72rem", color: "var(--text2)" }}>
           <div style={{ fontWeight: 600, color: "var(--text)", marginBottom: "0.35rem" }}>保存のある日</div>

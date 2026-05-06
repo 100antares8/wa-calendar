@@ -36,6 +36,7 @@ function Tabs({ initialTab, isAuthed }: { initialTab?: string; isAuthed: boolean
         <div style={{ display: "flex", flexDirection: "column", gap: "0.28rem" }}>
           <TodayPanel compact />
           <TraditionalClock compact />
+          <MonthCalendar comfortable />
         </div>
       }
       ipadTodayClock={<TraditionalClock compact comfortable />}

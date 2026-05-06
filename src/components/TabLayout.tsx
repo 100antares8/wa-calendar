@@ -148,14 +148,13 @@ export default function TabLayout({
               width: "100%",
               maxWidth: "min(1280px, 100%)",
               margin: "0 auto",
+              alignItems: "stretch",
             }}>
-              <div style={{ display: "flex", flexDirection: "column", gap: "0.85rem", minWidth: 0 }}>
-                {todayPanel}
+              <div style={{ display: "flex", flexDirection: "column", minWidth: 0, minHeight: 0 }}>
+                <div style={{ flex: "1 1 auto", minHeight: 0 }}>{todayPanel}</div>
+                <div style={{ flex: "0 0 auto", marginTop: "0.85rem", width: "100%" }}>{ipadTodayClock}</div>
               </div>
-              <div style={{ display: "flex", flexDirection: "column", gap: "0.85rem", minWidth: 0 }}>
-                <div style={{ display: "flex", justifyContent: "stretch", width: "100%" }}>{ipadTodayClock}</div>
-                {calendarForTabletToday ?? calendar}
-              </div>
+              <div style={{ minWidth: 0, minHeight: 0 }}>{calendarForTabletToday ?? calendar}</div>
             </div>
           ) : (
             <div style={{ maxWidth: activeTab === "lunar-year" ? "980px" : "960px", margin: "0 auto" }}>
